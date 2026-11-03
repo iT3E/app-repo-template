@@ -155,7 +155,9 @@ jobs:
         env:
           ANSWERS: ${{ matrix.answers }}
         run: |
-          last="$(git tag --list 'v*' --sort=-v:refname | head -n1)"
+          # The newest release this commit descends from (a newer tag on
+          # main, e.g. the release a merge just cut, would be a downgrade).
+          last="$(git describe --tags --abbrev=0 --match 'v*' HEAD 2>/dev/null || true)"
           if [ -z "$last" ]; then
             echo "No tag yet; skipped"; exit 0
           fi
