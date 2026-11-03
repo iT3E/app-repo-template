@@ -1,3 +1,0 @@
-kind: Added
-body: 'language: node, for npm app repos such as an Angular frontend. CI calls github-workflows node.yaml (npm ci, then the package''s lint, prettier --check, test and build scripts), with the Node version from .nvmrc unless node_version pins one, and node_lint / node_format_check to turn the first two off. A prettier hook using the repo''s own prettier, node labels, editorconfig, .gitignore, Taskfile (test, format, lint) and the renovate/node.json5 preset.'
-time: 2026-11-02T23:49:20.00087403-08:00

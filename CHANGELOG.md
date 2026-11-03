@@ -3,6 +3,16 @@
 Notable changes to this repository, newest first. Each PR adds a Changie
 fragment under `.changes/unreleased/`; merging to `main` releases them.
 
+## v0.5.0 - 2026-11-03
+
+### Added
+
+* language: node, for npm app repos such as an Angular frontend. CI calls github-workflows node.yaml (npm ci, then the package's lint, prettier --check, test and build scripts), with the Node version from .nvmrc unless node_version pins one, and node_lint / node_format_check to turn the first two off. A prettier hook using the repo's own prettier, node labels, editorconfig, .gitignore, Taskfile (test, format, lint) and the renovate/node.json5 preset.
+
+### Changed
+
+* Rendered workflow callers and Renovate presets: iT3E/github-workflows v1.1.0 to v1.2.0 (https://github.com/iT3E/github-workflows/releases/tag/v1.2.0).
+
 ## v0.4.0 - 2026-11-03
 
 ### Changed
