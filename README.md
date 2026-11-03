@@ -182,7 +182,8 @@ a PR. A conflict between a local edit and the template shows up as
 conflict markers or a `.rej` file in that PR.
 
 Renovate does not open separate PRs for the `iT3E/app-template` workflow
-pins or for the versions inside managed files (hook revs, CI tools in the
+pins, the `#vX.Y.Z` on the presets in `.github/renovate.json5`, or the
+versions inside managed files (hook revs, CI tools in the
 Taskfile): `renovate/default.json5` turns those off in app repos, since
 the template's own Renovate bumps them here and they arrive with the next
 release.
