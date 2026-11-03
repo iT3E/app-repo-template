@@ -16,6 +16,17 @@ area/github:
 area/go:
   - changed-files:
       - any-glob-to-any-file: ["**/*.go", "go.mod", "go.sum", ".golangci.yml"]
+[% elif language == 'node' %]
+area/node:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.{js,mjs,cjs,ts,mts,cts,tsx,html,css,scss}"
+          - "package.json"
+          - "package-lock.json"
+          - ".nvmrc"
+          - "*.config.{js,mjs,cjs,ts}"
+          - "tsconfig*.json"
+          - "angular.json"
 [% else %]
 area/python:
   - changed-files:

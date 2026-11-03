@@ -12,7 +12,7 @@ CI from [iT3E/github-workflows](https://github.com/iT3E/github-workflows);
 - Changes go through PRs, never straight to `main`. Merge only when every
   check is green (`gh-merge-safe.sh <pr> iT3E/[[ repo_name ]]`).
 - `task precommit:init` installs the hooks: betterleaks, the privacy
-  denylist (staged files, git identity, commit message) and [% if language == 'go' %]gofmt[% else %]ruff format[% endif %].
+  denylist (staged files, git identity, commit message) and [% if language == 'go' %]gofmt[% elif language == 'node' %]prettier (after `npm ci`)[% else %]ruff format[% endif %].
 - Each PR adds a Changie fragment (`changie new`) or carries the
   `skip-changelog` label. Merging fragments cuts a release (`vX.Y.Z` tag,
   GitHub Release[% if has_image %], image `:X.Y.Z`[% endif %]).

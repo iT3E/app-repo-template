@@ -1,0 +1,13 @@
+# Answers for template-ci.yaml's Node render (an Angular-style frontend: the
+# Node version from .nvmrc, lint and prettier on, an image pushed only from
+# v* tags and tested before any push).
+language: node
+has_image: true
+image_name: ""
+image_push_main: false
+node_version: .nvmrc
+node_lint: true
+node_format_check: true
+extra_test_command: ""
+image_test_command: |
+  test "$(docker run --rm --entrypoint id "$IMAGE_REF" -u)" != "0"

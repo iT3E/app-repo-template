@@ -83,6 +83,51 @@ tasks:
       GOLANGCI_LINT_VERSION: v2.15.0
     cmds:
       - docker run --rm -v "{{.ROOT_DIR}}:/src" -w /src golangci/golangci-lint:{{.GOLANGCI_LINT_VERSION}} golangci-lint run ./...
+[% elif language == 'node' %]
+  test:
+    desc: The checks CI runs (npm ci, [% if node_lint %]lint, [% endif %][% if node_format_check %]prettier --check, [% endif %]test, build[% if extra_test_command %], the extra tests[% endif %][% if has_image and image_test_command %], the image tests[% endif %])
+    cmds:
+      - npm ci --no-audit --no-fund
+[% if node_lint %]
+      - npm run lint
+[% endif %]
+[% if node_format_check %]
+      - npx --no-install prettier --check .
+[% endif %]
+      - npm test
+      - npm run build
+[% if extra_test_command %]
+      - |
+        [[ extra_test_command | trim | indent(8) ]]
+[% endif %]
+[% if has_image and image_test_command %]
+      - docker build -t app-test:dev .
+[% if image_test_postgres %]
+      # A throwaway Postgres on 127.0.0.1:55432, like CI's service on 5432.
+      - docker rm -f app-test-pg >/dev/null 2>&1 || true
+      - docker run -d --name app-test-pg -e POSTGRES_HOST_AUTH_METHOD=trust -p 127.0.0.1:55432:5432 postgres:{{.POSTGRES_VERSION}}
+      - defer: docker rm -f app-test-pg >/dev/null
+      - until docker exec app-test-pg pg_isready -q -h 127.0.0.1; do sleep 1; done
+[% endif %]
+      - |
+        export IMAGE_REF=app-test:dev
+[% if image_test_postgres %]
+        export TEST_POSTGRES_URL="postgresql://postgres@127.0.0.1:55432/postgres?sslmode=disable"
+[% endif %]
+        [[ image_test_command | trim | indent(8) ]]
+[% endif %]
+
+  format:
+    desc: prettier --write on the whole repo (the repo's own prettier; npm ci first)
+    cmds:
+      - npx --no-install prettier --write .
+[% if node_lint %]
+
+  lint:
+    desc: The package's lint script (npm run lint)
+    cmds:
+      - npm run lint
+[% endif %]
 [% else %]
   test:
     desc: The checks CI runs (compileall[% if extra_test_command %], the tests[% endif %][% if has_image and image_test_command %], the image tests[% endif %])

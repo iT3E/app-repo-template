@@ -125,7 +125,7 @@ jobs:
     name: actionlint
     permissions:
       contents: read
-    uses: iT3E/github-workflows/.github/workflows/actionlint.yaml@e05083a9e404e4e3ade5ded0c35f3d6692cd3f15 # v1.1.0
+    uses: iT3E/github-workflows/.github/workflows/actionlint.yaml@b64d92c664cdce3b7f7bc7e481b6b8d3572c442d # v1.2.0
 
   render:
     name: render (${{ matrix.answers }})
@@ -135,7 +135,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        answers: [go, python, go-lib]
+        answers: [go, python, node, go-lib]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -236,6 +236,11 @@ jobs:
           if [ -z "$last" ]; then
             echo "No tag yet; skipped"; exit 0
           fi
+          # An answers set added since $last (e.g. a new language) has no
+          # older render to update from; it is tested from the next release.
+          if ! git cat-file -e "$last:tests/$ANSWERS.yml" 2>/dev/null; then
+            echo "tests/$ANSWERS.yml is new since $last; skipped"; exit 0
+          fi
           old="$RUNNER_TEMP/update/example-$ANSWERS"
           copier copy --defaults --data-file "tests/$ANSWERS.yml" --vcs-ref "$last" "$GITHUB_WORKSPACE" "$old"
           cd "$old"
@@ -274,7 +279,7 @@ jobs:
           git config --global user.name "template-ci"
           git config --global user.email "template-ci@users.noreply.github.com"
           pipx install "copier==${COPIER_VERSION}"
-          for a in go python; do
+          for a in go python node; do
             copier copy --quiet --defaults --data-file "tests/$a.yml" --vcs-ref HEAD "$GITHUB_WORKSPACE" "$RUNNER_TEMP/example-$a"
           done
 

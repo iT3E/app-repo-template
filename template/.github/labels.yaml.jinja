@@ -21,6 +21,11 @@
   color: "72ccf3"
   description: >-
     Changes to Go code or modules
+[% elif language == 'node' %]
+- name: area/node
+  color: "72ccf3"
+  description: >-
+    Changes to Node code, packages or build config
 [% else %]
 - name: area/python
   color: "72ccf3"
@@ -41,6 +46,9 @@
   color: "ffc300"
 [% if language == 'go' %]
 - name: renovate/go
+  color: "ffc300"
+[% elif language == 'node' %]
+- name: renovate/node
   color: "ffc300"
 [% else %]
 - name: renovate/python

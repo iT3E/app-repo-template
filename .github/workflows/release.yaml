@@ -78,7 +78,7 @@ jobs:
     permissions:
       contents: write
       actions: write
-    uses: iT3E/github-workflows/.github/workflows/release.yaml@e05083a9e404e4e3ade5ded0c35f3d6692cd3f15 # v1.1.0
+    uses: iT3E/github-workflows/.github/workflows/release.yaml@b64d92c664cdce3b7f7bc7e481b6b8d3572c442d # v1.2.0
     with:
       bump: ${{ inputs.bump || 'auto' }}
       build-workflow: ""

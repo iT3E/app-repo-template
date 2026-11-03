@@ -1,6 +1,14 @@
 [% if language == 'go' %]
 /[[ repo_name ]]
 /out/
+[% elif language == 'node' %]
+node_modules/
+dist/
+coverage/
+.angular/
+*.tsbuildinfo
+.env
+.env.*
 [% else %]
 __pycache__/
 *.py[cod]
