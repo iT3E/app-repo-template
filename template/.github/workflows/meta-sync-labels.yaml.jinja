@@ -1,0 +1,24 @@
+---
+name: "Meta Sync labels"
+
+# Managed by Copier from https://github.com/iT3E/app-template (see
+# .copier-answers.yml). The logic is in the reusable workflow it calls;
+# change that in the template, and a template release reaches this repo as
+# a `copier update` PR. The @<sha> pin is that release.
+#
+# The repo's labels follow .github/labels.yaml; others are deleted.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths: [".github/labels.yaml"]
+
+permissions: {}
+
+jobs:
+  labels:
+    name: sync-labels
+    permissions:
+      contents: read
+      issues: write
+    uses: iT3E/app-template/.github/workflows/sync-labels.yaml@[[ _copier_conf.vcs_ref_hash ]] # [[ _commit ]]

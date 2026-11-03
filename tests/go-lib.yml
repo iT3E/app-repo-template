@@ -1,0 +1,7 @@
+# Answers for template-ci.yaml's no-image render (a Go module with an extra
+# test command and a pinned Go version).
+language: go
+has_image: false
+go_version: "1.25"
+extra_test_command: |
+  go test -run Example ./...

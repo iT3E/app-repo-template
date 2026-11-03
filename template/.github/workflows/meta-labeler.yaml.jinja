@@ -1,0 +1,23 @@
+---
+name: "Meta Labeler"
+
+# Managed by Copier from https://github.com/iT3E/app-template (see
+# .copier-answers.yml). The logic is in the reusable workflow it calls;
+# change that in the template, and a template release reaches this repo as
+# a `copier update` PR. The @<sha> pin is that release.
+#
+# area/* labels from the paths a PR changes (.github/labeler.yaml).
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: ["main"]
+
+permissions: {}
+
+jobs:
+  labeler:
+    name: labeler
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: iT3E/app-template/.github/workflows/labeler.yaml@[[ _copier_conf.vcs_ref_hash ]] # [[ _commit ]]

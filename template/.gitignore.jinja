@@ -1,0 +1,11 @@
+[% if language == 'go' %]
+/[[ repo_name ]]
+/out/
+[% else %]
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.env.*
+[% endif %]
+*.log

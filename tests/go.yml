@@ -1,0 +1,9 @@
+# Answers for template-ci.yaml's Go render (a service with an image pushed
+# from main).
+language: go
+has_image: true
+image_name: ""
+image_push_main: true
+go_version: go.mod
+extra_test_command: ""
+image_test_command: ""

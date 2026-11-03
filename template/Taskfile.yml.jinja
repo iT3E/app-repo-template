@@ -1,0 +1,89 @@
+---
+version: "3"
+
+# Managed by Copier from https://github.com/iT3E/app-template. Same task
+# names as tnwks-ops where they overlap (precommit:*, privacy:*).
+
+tasks:
+  default:
+    cmds:
+      - task --list
+
+  precommit:init:
+    desc: Install the git hooks (pre-commit and commit-msg) in this clone
+    cmds:
+      - bin/install-hooks
+
+  precommit:run:
+    desc: Run every hook on every file
+    cmds:
+      - pre-commit run --all-files
+
+  privacy:check:
+    desc: Check tracked files and paths against the privacy denylist
+    cmds:
+      - bin/privacy-check {{.CLI_ARGS}}
+
+  privacy:sync:
+    desc: Copy the denylist from a tnwks-ops checkout into this repo's PRIVACY_TERMS Actions secret
+    vars:
+      OPS: '{{.TNWKS_OPS_DIR | default "../tnwks-ops"}}'
+    cmds:
+      # gh picks this repo from the git remote.
+      - (cd "{{.OPS}}" && sops -d --extract '["terms"]' .github/privacy-terms.sops.yaml) | gh secret set PRIVACY_TERMS
+
+  changelog:new:
+    desc: Add a Changie fragment for this PR (needs changie, brew install changie)
+    cmds:
+      - changie new
+
+  template:update:
+    desc: Update the Copier-managed files to the latest app-template release (task template:update -- --vcs-ref vX.Y.Z for another)
+    cmds:
+      - copier update --skip-answered --defaults {{.CLI_ARGS}}
+[% if language == 'go' %]
+  test:
+    desc: gofmt, go vet and go test (what CI's go jobs run, minus golangci-lint)
+    cmds:
+      - test -z "$(gofmt -l .)" || { gofmt -l .; echo "gofmt needed"; exit 1; }
+      - go vet ./...
+      - go test ./...
+[% if extra_test_command %]
+      - |
+        [[ extra_test_command | trim | indent(8) ]]
+[% endif %]
+[% if has_image and image_test_command %]
+      - docker build -t app-test:dev .
+      - |
+        export IMAGE_REF=app-test:dev
+        [[ image_test_command | trim | indent(8) ]]
+[% endif %]
+
+  lint:
+    desc: golangci-lint with .golangci.yml, in Docker (no local install needed)
+    vars:
+      # renovate: datasource=github-releases depName=golangci/golangci-lint
+      GOLANGCI_LINT_VERSION: v2.15.0
+    cmds:
+      - docker run --rm -v "{{.ROOT_DIR}}:/src" -w /src golangci/golangci-lint:{{.GOLANGCI_LINT_VERSION}} golangci-lint run ./...
+[% else %]
+  test:
+    desc: The checks CI runs (compileall[% if extra_test_command %], the tests[% endif %][% if has_image and image_test_command %], the image tests[% endif %])
+    cmds:
+      - python3 -m compileall -q -x '/(\.git|\.venv|node_modules)/' .
+[% if extra_test_command %]
+      - |
+        [[ extra_test_command | trim | indent(8) ]]
+[% endif %]
+[% if has_image and image_test_command %]
+      - docker build -t app-test:dev .
+      - |
+        export IMAGE_REF=app-test:dev
+        [[ image_test_command | trim | indent(8) ]]
+[% endif %]
+
+  format:
+    desc: ruff format the given files (task format -- FILES)
+    cmds:
+      - pre-commit run ruff-format --files {{.CLI_ARGS}}
+[% endif %]

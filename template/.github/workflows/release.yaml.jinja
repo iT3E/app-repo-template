@@ -1,0 +1,46 @@
+---
+name: "Release"
+
+# Managed by Copier from https://github.com/iT3E/app-template (see
+# .copier-answers.yml). The logic is in the reusable workflow it calls;
+# change that in the template, and a template release reaches this repo as
+# a `copier update` PR. The @<sha> pin is that release.
+#
+# Cuts a release from the Changie fragments a merged PR added: batch them
+# into .changes/<version>.md and CHANGELOG.md, commit, tag vX.Y.Z, publish a
+# GitHub Release[% if has_image %], then dispatch build.yaml on the tag (a tag pushed
+# with GITHUB_TOKEN triggers nothing) so the tag's image is built[% endif %]. Runs when
+# a push to main touches .changes/unreleased/, and on demand to override the
+# bump. GitHub Free has no rulesets on private repos, so GITHUB_TOKEN can
+# push the release commit.
+on:
+  push:
+    branches: ["main"]
+    paths: [".changes/unreleased/**"]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump (auto follows the fragment kinds)"
+        type: choice
+        default: auto
+        options: [auto, patch, minor, major]
+
+permissions: {}
+
+# One release at a time, in merge order.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: release
+    permissions:
+      # push the release commit and tag, create the GitHub Release
+      contents: write
+      # dispatch build.yaml on the tag
+      actions: write
+    uses: iT3E/app-template/.github/workflows/release.yaml@[[ _copier_conf.vcs_ref_hash ]] # [[ _commit ]]
+    with:
+      bump: ${{ inputs.bump || 'auto' }}
+      build-workflow: "[% if has_image %]build.yaml[% endif %]"

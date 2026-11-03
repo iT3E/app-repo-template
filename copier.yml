@@ -1,0 +1,102 @@
+# Copier template for an app repo (https://copier.readthedocs.io).
+#
+#   copier copy --vcs-ref v0.1.0 https://github.com/iT3E/app-template.git <dir>
+#   copier update --vcs-ref v0.1.1        # in a repo made from it
+#
+# Kept free of Copier's unsafe features (_tasks, _migrations,
+# _jinja_extensions, _external_data): Renovate's hosted copier manager runs
+# `copier update` without --trust and refuses them. template-ci.yaml fails
+# if one appears.
+
+_min_copier_version: "9.4.0"
+_subdirectory: template
+_answers_file: .copier-answers.yml
+_templates_suffix: .jinja
+
+# GitHub Actions uses ${{ }}, Taskfile and Changie use {{ }}, so Jinja gets
+# [[ ]] for values, [% %] for blocks and [# #] for comments.
+_envops:
+  block_start_string: "[%"
+  block_end_string: "%]"
+  variable_start_string: "[["
+  variable_end_string: "]]"
+  comment_start_string: "[#"
+  comment_end_string: "#]"
+  keep_trailing_newline: true
+  trim_blocks: true
+  lstrip_blocks: true
+
+# Created once, then owned by the repo: copier update never touches them.
+_skip_if_exists:
+  - README.md
+  - CHANGELOG.md
+  - .gitignore
+  - .golangci.yml
+  - .github/privacy-allow
+
+_message_after_copy: |
+  Next, in [[ _copier_conf.dst_path ]]:
+    1. Set the PRIVACY_TERMS Actions secret: task privacy:sync
+    2. Install the hooks: task precommit:init
+    3. Run bin/privacy-check, then open everything as one PR.
+  See https://github.com/iT3E/app-template#create-a-new-app-repo
+
+# Not asked and not stored: the destination directory's name (normally the
+# repo name, also in Renovate's checkout). It only fills files created once
+# (README.md, .gitignore), so .copier-answers.yml never names a repo.
+repo_name:
+  type: str
+  default: "[[ _copier_conf.dst_path | realpath | basename ]]"
+  when: false
+
+language:
+  type: str
+  help: "Language of the app"
+  choices:
+    - go
+    - python
+
+has_image:
+  type: bool
+  help: "Does CI build a Dockerfile into a (public) GHCR image?"
+  default: true
+
+image_name:
+  type: str
+  help: "Image name (empty: ghcr.io/<owner>/<repo>, from the repo CI runs in)"
+  default: ""
+  when: "[[ has_image ]]"
+
+image_push_main:
+  type: bool
+  help: >-
+    Push :main and :sha-<short> on every merge to main? No means only v*
+    tags push (deploys pin :<version>@sha256), and the push gate checks the
+    whole history instead of the tree.
+  default: true
+  when: "[[ has_image ]]"
+
+go_version:
+  type: str
+  help: "Go version for CI (go.mod: read the go directive)"
+  default: go.mod
+  when: "[[ language == 'go' ]]"
+
+python_version:
+  type: str
+  help: "Python version for CI's host-side checks"
+  default: "3.12"
+  when: "[[ language == 'python' ]]"
+
+extra_test_command:
+  type: str
+  help: "Extra bash for CI after the language tests (empty: none)"
+  default: ""
+  multiline: true
+
+image_test_command:
+  type: str
+  help: "Bash run against the built image before any push; $IMAGE_REF is its tag (empty: none)"
+  default: ""
+  multiline: true
+  when: "[[ has_image ]]"

@@ -1,0 +1,11 @@
+# Answers for template-ci.yaml's Python render (jobs in an image pushed only
+# from v* tags, tested in the image).
+language: python
+has_image: true
+image_name: ""
+image_push_main: false
+python_version: "3.12"
+extra_test_command: ""
+image_test_command: |
+  docker run --rm "$IMAGE_REF" --help
+  test "$(docker run --rm --entrypoint id "$IMAGE_REF" -u)" != "0"

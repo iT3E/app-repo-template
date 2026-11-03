@@ -1,0 +1,199 @@
+---
+name: "Template CI"
+
+# Tests the template itself on every PR and push to main:
+#   lint      copier.yml uses no unsafe Copier feature; shellcheck on
+#             template/bin/*; yamllint on this repo's YAML.
+#   actionlint   this repo's workflows (the reusable ones included).
+#   render    copier copy for each answers set in tests/ (Go with an image,
+#             Python with a tag-only image, Go without one), then on the
+#             result: actionlint with the reusable workflows swapped in as
+#             local files (so every with:/secrets: is checked against their
+#             inputs), pre-commit validate-config, yamllint, shellcheck, and
+#             the @<sha> pins. Then copier update from the latest tag to
+#             this commit must apply cleanly and match a fresh render.
+#   renovate  renovate-config-validator on renovate/*.json5, this repo's
+#             config and the rendered repo configs, as repo configs.
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+
+permissions: {}
+
+concurrency:
+  group: template-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # renovate: datasource=pypi depName=copier
+  COPIER_VERSION: "9.19.1"
+  # renovate: datasource=pypi depName=pre-commit
+  PRE_COMMIT_VERSION: "4.7.0"
+  # renovate: datasource=pypi depName=yamllint
+  YAMLLINT_VERSION: "1.38.0"
+  # renovate: datasource=github-releases depName=rhysd/actionlint
+  ACTIONLINT_VERSION: "v1.7.12"
+  # renovate: datasource=npm depName=renovate
+  RENOVATE_VERSION: "44.206.2"
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Renovate's hosted copier manager runs copier update without --trust
+      # and refuses templates that need it.
+      - name: No unsafe Copier features
+        run: |
+          if grep -nE '^\s*_(tasks|migrations|jinja_extensions|external_data)\s*:' copier.yml; then
+            echo "::error file=copier.yml::copier.yml uses an unsafe Copier feature (needs --trust; Renovate's copier manager refuses it)"
+            exit 1
+          fi
+
+      - name: shellcheck
+        run: shellcheck template/bin/*
+
+      - name: yamllint
+        run: |
+          pipx run "yamllint==${YAMLLINT_VERSION}" -c .yamllint.yaml \
+            .github copier.yml tests .yamllint.yaml .changie.yaml .pre-commit-config.yaml
+
+  actionlint:
+    name: actionlint
+    permissions:
+      contents: read
+    uses: ./.github/workflows/actionlint.yaml
+
+  render:
+    name: render (${{ matrix.answers }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        answers: [go, python, go-lib]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # copier reads the tags (copier update from the latest one)
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install copier
+        run: pipx install "copier==${COPIER_VERSION}"
+
+      # copier copies from git, so the checkout must be a clean commit; on a
+      # PR that is the merge commit actions/checkout made.
+      - name: Render
+        env:
+          ANSWERS: ${{ matrix.answers }}
+        run: |
+          git config --global user.name "template-ci"
+          git config --global user.email "template-ci@users.noreply.github.com"
+          # Absolute source, so copier update can find it again; the
+          # directory name is what repo_name becomes.
+          out="$RUNNER_TEMP/fresh/example-$ANSWERS"
+          copier copy --defaults --data-file "tests/$ANSWERS.yml" --vcs-ref HEAD "$GITHUB_WORKSPACE" "$out"
+          echo "OUT=$out" >> "$GITHUB_ENV"
+          find "$out" -type f | sed "s|^$out/||" | sort
+
+      - name: Answers and pins
+        run: |
+          head="$(git rev-parse HEAD)"
+          cd "$OUT"
+          grep -q '^_commit: ' .copier-answers.yml
+          if grep -q '^repo_name:' .copier-answers.yml; then
+            echo "::error::repo_name must not be stored in .copier-answers.yml"; exit 1
+          fi
+          # Every caller pins this exact commit.
+          bad="$(grep -rhoE 'iT3E/app-template/\.github/workflows/[a-z-]+\.yaml@[^ ]+' .github/workflows | grep -v "@${head}\$" || true)"
+          if [ -n "$bad" ]; then
+            echo "::error::caller pins that aren't ${head}:"; echo "$bad"; exit 1
+          fi
+          grep -rc "@${head} # " .github/workflows
+
+      - name: actionlint (reusable workflows as local files)
+        env:
+          ANSWERS: ${{ matrix.answers }}
+        run: |
+          cp -r "$OUT" "$RUNNER_TEMP/lint-$ANSWERS"
+          cd "$RUNNER_TEMP/lint-$ANSWERS"
+          git init -q  # actionlint finds the project by its .git
+          for f in "$GITHUB_WORKSPACE"/.github/workflows/*.yaml; do
+            name="$(basename "$f")"
+            case "$name" in self-* | template-ci.yaml) continue ;; esac
+            cp "$f" ".github/workflows/tpl-$name"
+          done
+          sed -i -E 's#iT3E/app-template/\.github/workflows/([a-z-]+\.yaml)@[0-9a-f]{40} \# .*#./.github/workflows/tpl-\1#' .github/workflows/*.yaml
+          docker run --rm -v "$PWD":/repo -w /repo "rhysd/actionlint:${ACTIONLINT_VERSION#v}" -color
+
+      - name: pre-commit validate-config
+        run: |
+          cd "$OUT"
+          pipx run "pre-commit==${PRE_COMMIT_VERSION}" validate-config .pre-commit-config.yaml
+
+      - name: yamllint
+        run: |
+          pipx run "yamllint==${YAMLLINT_VERSION}" -c .yamllint.yaml \
+            "$OUT/.github" "$OUT/.pre-commit-config.yaml" "$OUT/Taskfile.yml" \
+            "$OUT/.changie.yaml" "$OUT/.copier-answers.yml"
+
+      - name: shellcheck
+        run: shellcheck "$OUT"/bin/*
+
+      - name: copier update from the latest tag
+        env:
+          ANSWERS: ${{ matrix.answers }}
+        run: |
+          last="$(git tag --list 'v*' --sort=-v:refname | head -n1)"
+          if [ -z "$last" ]; then
+            echo "No tag yet; skipped"; exit 0
+          fi
+          old="$RUNNER_TEMP/update/example-$ANSWERS"
+          copier copy --defaults --data-file "tests/$ANSWERS.yml" --vcs-ref "$last" "$GITHUB_WORKSPACE" "$old"
+          cd "$old"
+          git init -q && git add -A && git commit -qm "render $last"
+          copier update --defaults --skip-answered --vcs-ref HEAD
+          if git status --porcelain | grep -E '\.rej$' || git grep -n -E '^(<<<<<<<|>>>>>>>) ' ; then
+            echo "::error::copier update $last -> HEAD left conflicts"; exit 1
+          fi
+          # The updated repo must be what a fresh render of HEAD gives.
+          diff -r -x .git "$OUT" "$old"
+          echo "copier update $last -> $(git -C "$GITHUB_WORKSPACE" rev-parse --short HEAD): clean"
+
+  renovate:
+    name: renovate-config
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Render the repo configs
+        run: |
+          git config --global user.name "template-ci"
+          git config --global user.email "template-ci@users.noreply.github.com"
+          pipx install "copier==${COPIER_VERSION}"
+          for a in go python; do
+            copier copy --quiet --defaults --data-file "tests/$a.yml" --vcs-ref HEAD "$GITHUB_WORKSPACE" "$RUNNER_TEMP/example-$a"
+          done
+
+      - name: renovate-config-validator
+        run: |
+          npx --yes --package "renovate@${RENOVATE_VERSION}" -- renovate-config-validator --strict --no-global \
+            renovate/*.json5 .github/renovate.json5 \
+            "$RUNNER_TEMP"/example-*/.github/renovate.json5

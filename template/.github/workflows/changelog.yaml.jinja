@@ -1,0 +1,22 @@
+---
+name: "Changelog"
+
+# Managed by Copier from https://github.com/iT3E/app-template (see
+# .copier-answers.yml). The logic is in the reusable workflow it calls;
+# change that in the template, and a template release reaches this repo as
+# a `copier update` PR. The @<sha> pin is that release.
+#
+# Every PR adds a Changie fragment (`changie new`), unless it is labeled
+# skip-changelog or comes from a dependency bot.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions: {}
+
+jobs:
+  changelog:
+    name: changelog
+    permissions:
+      contents: read
+    uses: iT3E/app-template/.github/workflows/changelog.yaml@[[ _copier_conf.vcs_ref_hash ]] # [[ _commit ]]

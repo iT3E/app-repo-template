@@ -1,0 +1,84 @@
+---
+name: "Build"
+
+# Managed by Copier from https://github.com/iT3E/app-template (see
+# .copier-answers.yml). The logic is in the reusable workflow it calls;
+# change that in the template, and a template release reaches this repo as
+# a `copier update` PR. The @<sha> pin is that release.
+#
+[% if language == 'go' %]
+# go: gofmt, go vet, golangci-lint (PRs, new issues only), go test -race.
+[% else %]
+# python: compileall (plus ruff and tests where enabled).
+[% endif %]
+[% if has_image %]
+# image: Docker build on PRs[% if image_push_main %]; push :main and :sha-<short> from main[% endif %];
+# push :<version> and :sha-<short> from a v* tag (release.yaml dispatches
+# this workflow on the tags it creates). Never :latest.
+[% endif %]
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions: {}
+
+# One run per ref. PR runs cancel each other; main and tag runs queue.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+[% if language == 'go' %]
+  go:
+    name: go
+    permissions:
+      contents: read
+    uses: iT3E/app-template/.github/workflows/go.yaml@[[ _copier_conf.vcs_ref_hash ]] # [[ _commit ]]
+[% if go_version != 'go.mod' or extra_test_command %]
+    with:
+[% if go_version != 'go.mod' %]
+      go-version: "[[ go_version ]]"
+[% endif %]
+[% if extra_test_command %]
+      extra-test-command: |
+        [[ extra_test_command | trim | indent(8) ]]
+[% endif %]
+[% endif %]
+[% else %]
+  python:
+    name: python
+    permissions:
+      contents: read
+    uses: iT3E/app-template/.github/workflows/python.yaml@[[ _copier_conf.vcs_ref_hash ]] # [[ _commit ]]
+    with:
+      python-version: "[[ python_version ]]"
+[% if extra_test_command %]
+      test-command: |
+        [[ extra_test_command | trim | indent(8) ]]
+[% endif %]
+[% endif %]
+[% if has_image %]
+
+  image:
+    name: image
+    needs: ["[[ language ]]"]
+    permissions:
+      contents: read
+      packages: write
+    uses: iT3E/app-template/.github/workflows/image.yaml@[[ _copier_conf.vcs_ref_hash ]] # [[ _commit ]]
+    with:
+[% if image_name %]
+      image: [[ image_name ]]
+[% endif %]
+      push-main: [[ image_push_main | lower ]]
+      privacy-gate: [[ 'tree' if image_push_main else 'history' ]]
+[% if image_test_command %]
+      test-command: |
+        [[ image_test_command | trim | indent(8) ]]
+[% endif %]
+    secrets:
+      PRIVACY_TERMS: ${{ secrets.PRIVACY_TERMS }}
+[% endif %]

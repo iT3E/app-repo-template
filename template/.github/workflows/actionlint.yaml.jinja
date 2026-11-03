@@ -1,0 +1,23 @@
+---
+name: "Actionlint"
+
+# Managed by Copier from https://github.com/iT3E/app-template (see
+# .copier-answers.yml). The logic is in the reusable workflow it calls;
+# change that in the template, and a template release reaches this repo as
+# a `copier update` PR. The @<sha> pin is that release.
+#
+# actionlint (with shellcheck) on the workflows, only when a PR touches them.
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - ".github/actionlint.yaml"
+
+permissions: {}
+
+jobs:
+  actionlint:
+    name: actionlint
+    permissions:
+      contents: read
+    uses: iT3E/app-template/.github/workflows/actionlint.yaml@[[ _copier_conf.vcs_ref_hash ]] # [[ _commit ]]

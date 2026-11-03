@@ -1,0 +1,26 @@
+---
+# actions/labeler v5+ match objects (https://github.com/actions/labeler#match-object).
+# Every label here must also be in .github/labels.yaml.
+[% if has_image %]
+area/docker:
+  - changed-files:
+      - any-glob-to-any-file: ["Dockerfile", ".dockerignore", "entrypoint.sh"]
+[% endif %]
+area/docs:
+  - changed-files:
+      - any-glob-to-any-file: ["*.md", "docs/**"]
+area/github:
+  - changed-files:
+      - any-glob-to-any-file: ".github/**"
+[% if language == 'go' %]
+area/go:
+  - changed-files:
+      - any-glob-to-any-file: ["**/*.go", "go.mod", "go.sum", ".golangci.yml"]
+[% else %]
+area/python:
+  - changed-files:
+      - any-glob-to-any-file: ["**/*.py", "**/requirements*.txt", "constraints.txt", "pyproject.toml"]
+area/tests:
+  - changed-files:
+      - any-glob-to-any-file: "tests/**"
+[% endif %]

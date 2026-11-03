@@ -1,0 +1,16 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  // The template repo itself: the same base its app repos get. Version bumps
+  // here (actions in the reusable workflows, hook revs and CI tools in
+  // template/) reach the app repos with the next template release.
+  extends: ["github>iT3E/app-template//renovate/default.json5"],
+  packageRules: [
+    {
+      // default.json5 turns these files off in app repos (the template owns
+      // them there). Here they are the sources, so they stay on.
+      description: "The template's own workflows and Taskfile",
+      matchFileNames: [".github/workflows/**", ".pre-commit-config.yaml", "Taskfile.yml"],
+      enabled: true,
+    },
+  ],
+}
