@@ -168,7 +168,10 @@ jobs:
           copier copy --defaults --data-file "tests/$ANSWERS.yml" --vcs-ref "$last" "$GITHUB_WORKSPACE" "$old"
           cd "$old"
           git init -q && git add -A && git commit -qm "render $last"
-          copier update --defaults --skip-answered --vcs-ref HEAD
+          # The answers file again, so a question added since $last gets
+          # the same answer as the fresh render (Renovate takes defaults).
+          copier update --defaults --skip-answered --vcs-ref HEAD \
+            --data-file "$GITHUB_WORKSPACE/tests/$ANSWERS.yml"
           if git status --porcelain | grep -E '\.rej$' || git grep -n -E '^(<<<<<<<|>>>>>>>) ' ; then
             echo "::error::copier update $last -> HEAD left conflicts"; exit 1
           fi
