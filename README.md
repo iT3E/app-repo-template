@@ -76,6 +76,7 @@ any extra workflow a repo adds for itself.
 | `python_version` | `3.12` | setup-python for the host-side Python checks |
 | `extra_test_command` | empty | bash after the language tests (Go: after `go test`; Python: after compileall) |
 | `image_test_command` | empty | bash against the locally built image before any push; `$IMAGE_REF` is its tag |
+| `image_test_postgres` | `false` | a throwaway Postgres for `image_test_command`: CI's service on `127.0.0.1:5432`, `task test`'s container on `127.0.0.1:55432`, both as `$TEST_POSTGRES_URL` (containers reach it with `--network host`) |
 
 The repo name is not a question. It is the destination directory's name,
 and only fills the files created once (`README.md`, `.gitignore`), so no
@@ -92,7 +93,7 @@ Secrets are passed explicitly (`secrets: PRIVACY_TERMS: ...`), never
 | --- | --- | --- | --- | --- |
 | `go.yaml` | `lint`, `test` | `go-version` (empty: from `go-version-file`), `go-version-file` (`go.mod`), `working-directory` (`.`), `golangci-lint-version` (pinned), `test-command` (`go test -race ./...`), `extra-test-command` (empty) | none | `contents: read` |
 | `python.yaml` | `check` | `python-version` (`3.12`), `working-directory` (`.`), `ruff-check` (`false`), `ruff-format` (`false`), `ruff-version` (pinned), `test-command` (empty) | none | `contents: read` |
-| `image.yaml` | `image` | `image` (empty: `ghcr.io/<owner>/<repo>`), `context` (`.`), `dockerfile` (`Dockerfile`), `platforms` (empty), `build-args` (empty), `push-main` (`true`), `privacy-gate` (`tree` or `history`), `test-command` (empty). Output: `digest` | `PRIVACY_TERMS` | `contents: read`, `packages: write` |
+| `image.yaml` | `image` | `image` (empty: `ghcr.io/<owner>/<repo>`), `context` (`.`), `dockerfile` (`Dockerfile`), `platforms` (empty), `build-args` (empty), `push-main` (`true`), `privacy-gate` (`tree` or `history`), `test-command` (empty), `postgres` (`false`), `postgres-version` (pinned). Output: `digest` | `PRIVACY_TERMS` | `contents: read`, `packages: write` |
 | `privacy.yaml` | `privacy` | `allow-missing-terms` (`false`) | `PRIVACY_TERMS` | `contents: read` |
 | `privacy-text.yaml` | `privacy-text` | none | `PRIVACY_TERMS` | `contents: read`, `issues: write`, `pull-requests: write` |
 | `secret-scan.yaml` | `betterleaks` | `config` (`.betterleaks.toml`), `betterleaks-version` (pinned) | none | `contents: read` |
@@ -200,7 +201,10 @@ them, and Renovate's `ignoreTests: false` does the same for its own PRs.
   repo turns them on. Tests that need the app's environment run in the
   image instead (`image_test_command`).
 - **Image** (`image / image`): the Docker build, then `image_test_command`
-  against it, all without pushing.
+  against it (with a throwaway Postgres if `image_test_postgres`), all
+  without pushing. A long or changing test belongs in a script the repo
+  owns (say `bin/image-test`), with `image_test_command` just calling it,
+  so editing a test doesn't mean re-answering Copier.
 - **All**: `actionlint` (workflow changes only), `betterleaks`, `privacy`,
   `changelog`, `labeler`.
 
@@ -382,7 +386,9 @@ To re-run a release by hand, use the workflow's `bump` input.
   runs without `--trust` and refuses them; `template-ci.yaml` checks.
 - `task render` renders each `tests/*.yml` answers set into `out/` from
   the last commit.
-- `template-ci.yaml` renders the same sets in CI and runs actionlint (with
+- `template-ci.yaml` runs `image.yaml` on `tests/image/` (with and
+  without Postgres, never pushed), renders the same sets as `task render`
+  and runs actionlint (with
   the reusable workflows swapped in as local files, so callers are checked
   against their inputs), `pre-commit validate-config`, yamllint and
   shellcheck on them, checks the `@<sha>` pins, applies `copier update`

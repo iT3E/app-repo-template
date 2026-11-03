@@ -12,6 +12,9 @@ name: "Template CI"
 #             inputs), pre-commit validate-config, yamllint, shellcheck, and
 #             the @<sha> pins. Then copier update from the latest tag to
 #             this commit must apply cleanly and match a fresh render.
+#   image     image.yaml itself, on tests/image/ (never pushed: push-main
+#             is false and this workflow doesn't run on tags), with and
+#             without its Postgres service.
 #   renovate  renovate-config-validator on renovate/*.json5, this repo's
 #             config and the rendered repo configs, as repo configs.
 on:
@@ -165,13 +168,46 @@ jobs:
           copier copy --defaults --data-file "tests/$ANSWERS.yml" --vcs-ref "$last" "$GITHUB_WORKSPACE" "$old"
           cd "$old"
           git init -q && git add -A && git commit -qm "render $last"
-          copier update --defaults --skip-answered --vcs-ref HEAD
+          # The answers file again, so a question added since $last gets
+          # the same answer as the fresh render (Renovate takes defaults).
+          copier update --defaults --skip-answered --vcs-ref HEAD \
+            --data-file "$GITHUB_WORKSPACE/tests/$ANSWERS.yml"
           if git status --porcelain | grep -E '\.rej$' || git grep -n -E '^(<<<<<<<|>>>>>>>) ' ; then
             echo "::error::copier update $last -> HEAD left conflicts"; exit 1
           fi
           # The updated repo must be what a fresh render of HEAD gives.
           diff -r -x .git "$OUT" "$old"
           echo "copier update $last -> $(git -C "$GITHUB_WORKSPACE" rev-parse --short HEAD): clean"
+
+  image:
+    name: image (postgres ${{ matrix.postgres }})
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: [false, true]
+    permissions:
+      contents: read
+      # what image.yaml declares; nothing is pushed from here
+      packages: write
+    uses: ./.github/workflows/image.yaml
+    with:
+      image: ghcr.io/it3e/app-template-test
+      context: tests/image
+      dockerfile: tests/image/Dockerfile
+      push-main: false
+      postgres: ${{ matrix.postgres }}
+      test-command: |
+        test "$(docker run --rm "$IMAGE_REF" ok)" = "ok"
+        test "$(docker run --rm --entrypoint id "$IMAGE_REF" -u)" = "1000"
+        if [ -n "$TEST_POSTGRES_URL" ]; then
+          docker run --rm --network host postgres:18 psql "$TEST_POSTGRES_URL" -tAc 'select 1' | grep -qx 1
+          echo "Postgres service reachable"
+        else
+          if timeout 3 bash -c '</dev/tcp/127.0.0.1/5432' 2>/dev/null; then
+            echo "::error::a Postgres service runs without postgres: true"; exit 1
+          fi
+          echo "No Postgres service, as expected"
+        fi
 
   renovate:
     name: renovate-config

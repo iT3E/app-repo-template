@@ -4,6 +4,12 @@ version: "3"
 # Managed by Copier from https://github.com/iT3E/app-template. Same task
 # names as tnwks-ops where they overlap (precommit:*, privacy:*).
 
+[% if has_image and image_test_command and image_test_postgres %]
+vars:
+  # renovate: datasource=docker depName=postgres
+  POSTGRES_VERSION: "18"
+
+[% endif %]
 tasks:
   default:
     cmds:
@@ -55,8 +61,18 @@ tasks:
 [% endif %]
 [% if has_image and image_test_command %]
       - docker build -t app-test:dev .
+[% if image_test_postgres %]
+      # A throwaway Postgres on 127.0.0.1:55432, like CI's service on 5432.
+      - docker rm -f app-test-pg >/dev/null 2>&1 || true
+      - docker run -d --name app-test-pg -e POSTGRES_HOST_AUTH_METHOD=trust -p 127.0.0.1:55432:5432 postgres:{{.POSTGRES_VERSION}}
+      - defer: docker rm -f app-test-pg >/dev/null
+      - until docker exec app-test-pg pg_isready -q -h 127.0.0.1; do sleep 1; done
+[% endif %]
       - |
         export IMAGE_REF=app-test:dev
+[% if image_test_postgres %]
+        export TEST_POSTGRES_URL="postgresql://postgres@127.0.0.1:55432/postgres?sslmode=disable"
+[% endif %]
         [[ image_test_command | trim | indent(8) ]]
 [% endif %]
 
@@ -78,8 +94,18 @@ tasks:
 [% endif %]
 [% if has_image and image_test_command %]
       - docker build -t app-test:dev .
+[% if image_test_postgres %]
+      # A throwaway Postgres on 127.0.0.1:55432, like CI's service on 5432.
+      - docker rm -f app-test-pg >/dev/null 2>&1 || true
+      - docker run -d --name app-test-pg -e POSTGRES_HOST_AUTH_METHOD=trust -p 127.0.0.1:55432:5432 postgres:{{.POSTGRES_VERSION}}
+      - defer: docker rm -f app-test-pg >/dev/null
+      - until docker exec app-test-pg pg_isready -q -h 127.0.0.1; do sleep 1; done
+[% endif %]
       - |
         export IMAGE_REF=app-test:dev
+[% if image_test_postgres %]
+        export TEST_POSTGRES_URL="postgresql://postgres@127.0.0.1:55432/postgres?sslmode=disable"
+[% endif %]
         [[ image_test_command | trim | indent(8) ]]
 [% endif %]
 
