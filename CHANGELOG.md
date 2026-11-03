@@ -3,6 +3,12 @@
 Notable changes to this repository, newest first. Each PR adds a Changie
 fragment under `.changes/unreleased/`; merging to `main` releases them.
 
+## v0.3.0 - 2026-11-03
+
+### Changed
+
+* The reusable workflows and Renovate presets moved to iT3E/github-workflows (v1.0.0, same names, inputs and jobs), and this repo is now iT3E/app-repo-template with only the Copier template. Rendered callers pin iT3E/github-workflows and the rendered renovate.json5 extends its presets, both at the release in copier.yml's github_workflows. A github-workflows release now reaches app repos as a template release (Renovate bumps the pin here, and merging it releases the template).
+
 ## v0.2.1 - 2026-11-03
 
 ### Fixed
