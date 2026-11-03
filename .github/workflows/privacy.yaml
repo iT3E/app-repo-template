@@ -19,7 +19,7 @@ jobs:
     name: privacy
     permissions:
       contents: read
-    uses: iT3E/github-workflows/.github/workflows/privacy.yaml@adf6ecc525a6b011564e59bf6baeec1fa4d47fb7 # v1.0.2
+    uses: iT3E/github-workflows/.github/workflows/privacy.yaml@e05083a9e404e4e3ade5ded0c35f3d6692cd3f15 # v1.1.0
     with:
       allow-missing-terms: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
     secrets:

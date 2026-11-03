@@ -148,13 +148,16 @@ PR**: `chore(template): update app-repo-template to vX.Y.Z`, labeled
    `_commit` in `.copier-answers.yml`, runs `copier update --vcs-ref
    vX.Y.Z` (no `--trust`; the template needs none), and opens the PR. One
    PR per release, never grouped with other updates.
-3. The repo's own CI runs on it, with the workflows it now calls. It is
-   reviewed and merged by hand with `gh-merge-safe.sh` (no automerge: it
-   changes CI, so a green run alone proves little).
+3. The repo's own CI runs on it, with the workflows it now calls, and
+   Renovate merges it once every check is green (every update type; the
+   repo's CI running the new callers is the test). It changes only repo
+   tooling, so it releases nothing in the app repo.
 
-**A github-workflows change** takes two hops, the first one automatic:
+**A github-workflows change** takes two hops, both automatic:
 
 1. A PR in github-workflows merges with a fragment, and it tags `vA.B.C`.
+   A Renovate merge there that changes a reusable workflow or a preset
+   tags a patch by itself.
 2. Here, Renovate opens one PR (label `renovate/github-workflows`) moving
    `github_workflows` in `copier.yml` (a custom regex manager), this
    repo's own callers and its preset `#vA.B.C`. Template CI lints the
@@ -219,6 +222,20 @@ Breaking the major. `first-version` (`v0.1.0`) applies only while
 `.changes/` has no `v*.md`; a repo with older hand-made tags backfills them
 there so the next release follows.
 
+- **Dependency updates release themselves** (repos with an image).
+  Renovate PRs carry no fragment, so `release.yaml` runs on every push to
+  `main` and passes `auto-fragment: "Dependency updates"`: when no
+  fragment is pending and a Renovate (or Dependabot) commit since the last
+  tag changed anything outside docs, `.github/` and the repo tooling this
+  template manages (`.copier-answers.yml`, `Taskfile.yml`,
+  `.pre-commit-config.yaml`, `bin/install-hooks`, `bin/privacy-check`, the
+  dotfiles), it writes a `Fixed` fragment naming those commits and tags a
+  patch. So a merged Go module, Python package or base image update
+  becomes an image and a deploy-repo PR. Template updates and CI-only
+  bumps release nothing. A person's PR still needs its own fragment; one
+  labeled `skip-changelog` releases nothing. The paths are github-workflows'
+  `ship-paths` default.
+
 - **No release app.** Private repos on GitHub Free have no rulesets, so
   `GITHUB_TOKEN` (`contents: write`) can push the release commit and tag.
 - **The build is dispatched.** A tag pushed with `GITHUB_TOKEN` starts no
@@ -242,7 +259,8 @@ tag-only repos). A repo deployed as `:main` with `imagePullPolicy: Always`
 ships each merge on the next pod restart; the release commit triggers
 nothing, so `:main` stays on the merge commit's image (same code). A
 tag-only repo reaches the cluster when a deploy-repo PR moves its
-`:<version>@sha256` pin.
+`:<version>@sha256` pin. tnwks-ops deploys every app that way now, and
+its Renovate automerges those PRs behind its own CI.
 
 ## Renovate
 
@@ -349,7 +367,10 @@ The template releases itself the way app repos do, with Changie:
    `release.yaml` batches the fragments, commits `chore(release): vX.Y.Z`,
    tags it and publishes the GitHub Release. Renovate's github-workflows
    PR needs no fragment: `release.yaml` writes one when a push moves the
-   `github_workflows` pin.
+   `github_workflows` pin. Any other Renovate merge that changes
+   `template/` or `copier.yml` (a hook rev, a pinned tool) releases a
+   patch through `auto-fragment`; one that only touches this repo's own
+   CI releases nothing.
 3. The tag is the release. App repos get it as a Renovate PR (see
    [How updates flow](#how-updates-flow)), or with `task template:update`.
 
