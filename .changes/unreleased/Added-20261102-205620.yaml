@@ -1,3 +1,0 @@
-kind: Added
-body: 'First release: reusable workflows (Go, Python, image, privacy, secret scan, actionlint, changelog, labels, release), the Copier template for app repos, and Renovate presets.'
-time: 2026-11-02T20:56:20.463998918-08:00
