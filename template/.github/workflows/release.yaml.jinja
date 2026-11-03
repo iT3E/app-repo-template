@@ -10,14 +10,29 @@ name: "Release"
 # Cuts a release from the Changie fragments a merged PR added: batch them
 # into .changes/<version>.md and CHANGELOG.md, commit, tag vX.Y.Z, publish a
 # GitHub Release[% if has_image %], then dispatch build.yaml on the tag (a tag pushed
-# with GITHUB_TOKEN triggers nothing) so the tag's image is built[% endif %]. Runs when
-# a push to main touches .changes/unreleased/, and on demand to override the
-# bump. GitHub Free has no rulesets on private repos, so GITHUB_TOKEN can
-# push the release commit.
+# with GITHUB_TOKEN triggers nothing) so the tag's image is built[% endif %].
+[% if has_image %]
+# Runs on every push to main, and on demand to override the bump.
+#
+# Renovate PRs carry no fragment. When one changed what goes into the image
+# (dependencies, the Dockerfile, code: anything but docs, .github/ and the
+# repo tooling this template manages), auto-fragment adds a Fixed
+# "Dependency updates" fragment and it releases a patch by itself, so the
+# update reaches the deploy repo. A template update or a CI-only bump
+# releases nothing, and a person's PR still brings its own fragment. The
+# reusable workflow decides, in seconds, so every push runs it.
+[% else %]
+# Runs when a push to main touches .changes/unreleased/, and on demand to
+# override the bump.
+[% endif %]
+# GitHub Free has no rulesets on private repos, so GITHUB_TOKEN can push the
+# release commit.
 on:
   push:
     branches: ["main"]
+[% if not has_image %]
     paths: [".changes/unreleased/**"]
+[% endif %]
   workflow_dispatch:
     inputs:
       bump:
@@ -45,3 +60,6 @@ jobs:
     with:
       bump: ${{ inputs.bump || 'auto' }}
       build-workflow: "[% if has_image %]build.yaml[% endif %]"
+[% if has_image %]
+      auto-fragment: "Dependency updates"
+[% endif %]

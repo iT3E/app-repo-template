@@ -25,10 +25,17 @@ tnwks-ops); `copier update` keeps local edits to this file.
   Fixed/Security are a patch, Added/Changed/Deprecated/Removed a minor,
   Breaking a major.
 [% if has_image %]
+- Renovate PRs carry no fragment. A merged one that changed what goes into
+  the image (dependencies, the Dockerfile) releases a patch by itself
+  (`auto-fragment`, "Dependency updates"); template and CI-only updates
+  release nothing. A PR by a person always brings its own fragment.
+[% endif %]
+[% if has_image %]
 [% if image_push_main %]
 - Image tags: `:main` and `:sha-<short>` on every merge, `:<version>` and
-  `:sha-<short>` on a release tag. tnwks-ops pins `:main`, so don't rename
-  or drop tags without changing tnwks-ops first.
+  `:sha-<short>` on a release tag. tnwks-ops pins `:<version>@sha256` and
+  its Renovate moves the pin on each release, so don't rename or drop tags
+  without changing tnwks-ops first.
 [% else %]
 - Image tags: only a release tag pushes, as `:<version>` and
   `:sha-<short>`; `main` builds without pushing. tnwks-ops pins
@@ -44,8 +51,8 @@ tnwks-ops); `copier update` keeps local edits to this file.
   iT3E/github-workflows, pinned by the template, and the files listed in
   app-repo-template's README are managed by Copier. Change them there; a
   template release reaches this repo as a
-  `copier update` PR (Renovate, label `renovate/template`, or
-  `task template:update`). A local edit to a managed file survives
+  `copier update` PR (Renovate, label `renovate/template`, merged by
+  Renovate when green, or `task template:update`). A local edit to a managed file survives
   updates, but keep those rare.
 
 ## Privacy

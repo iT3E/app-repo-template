@@ -10,10 +10,14 @@ name: "Release"
 # hands release.yaml a fragment naming the new version, so every
 # github-workflows release becomes a template release and reaches app repos
 # as their copier update PR.
+#
+# Any other Renovate merge that changed what app repos render (template/,
+# say a hook rev or a pinned tool) releases a patch through auto-fragment
+# ("Dependency updates"). One that only touches this repo's own CI, hooks or
+# Taskfile releases nothing. So every push to main runs this.
 on:
   push:
     branches: ["main"]
-    paths: [".changes/unreleased/**", "copier.yml"]
   workflow_dispatch:
     inputs:
       bump:
@@ -74,9 +78,13 @@ jobs:
     permissions:
       contents: write
       actions: write
-    uses: iT3E/github-workflows/.github/workflows/release.yaml@adf6ecc525a6b011564e59bf6baeec1fa4d47fb7 # v1.0.2
+    uses: iT3E/github-workflows/.github/workflows/release.yaml@e05083a9e404e4e3ade5ded0c35f3d6692cd3f15 # v1.1.0
     with:
       bump: ${{ inputs.bump || 'auto' }}
       build-workflow: ""
       fragment-kind: ${{ needs.pin.outputs.kind || 'Fixed' }}
       fragment-body: ${{ needs.pin.outputs.body }}
+      auto-fragment: "Dependency updates"
+      ship-paths: |
+        template
+        copier.yml
