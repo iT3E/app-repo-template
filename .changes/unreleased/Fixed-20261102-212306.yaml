@@ -1,3 +1,0 @@
-kind: Fixed
-body: 'renovate/default.json5: the renovate-config manager no longer opens its own PR for the #vX.Y.Z on the app-template presets; the copier update PR moves them.'
-time: 2026-11-02T21:23:06.871314455-08:00

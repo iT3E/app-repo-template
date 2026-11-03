@@ -3,6 +3,12 @@
 Notable changes to this repository, newest first. Each PR adds a Changie
 fragment under `.changes/unreleased/`; merging to `main` releases them.
 
+## v0.2.1 - 2026-11-03
+
+### Fixed
+
+* renovate/default.json5: the renovate-config manager no longer opens its own PR for the #vX.Y.Z on the app-template presets; the copier update PR moves them.
+
 ## v0.2.0 - 2026-11-03
 
 ### Added
