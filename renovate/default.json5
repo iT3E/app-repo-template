@@ -89,8 +89,11 @@
       enabled: false,
     },
     {
-      description: "app-template's reusable workflows anywhere else: copier update moves them",
-      matchManagers: ["github-actions"],
+      // The @<sha> workflow pins anywhere else, and the #vX.Y.Z on this
+      // preset in .github/renovate.json5 (the renovate-config manager):
+      // copier update moves both, so separate PRs would only collide.
+      description: "app-template's workflow and preset pins: copier update moves them",
+      matchManagers: ["github-actions", "renovate-config"],
       matchPackageNames: ["iT3E/app-template"],
       enabled: false,
     },
