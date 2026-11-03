@@ -41,6 +41,7 @@ tasks:
     desc: Update the Copier-managed files to the latest app-template release (task template:update -- --vcs-ref vX.Y.Z for another)
     cmds:
       - copier update --skip-answered --defaults {{.CLI_ARGS}}
+
 [% if language == 'go' %]
   test:
     desc: gofmt, go vet and go test (what CI's go jobs run, minus golangci-lint)
