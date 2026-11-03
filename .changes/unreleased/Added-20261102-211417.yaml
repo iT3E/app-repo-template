@@ -1,3 +1,0 @@
-kind: Added
-body: 'image.yaml: postgres and postgres-version inputs start a throwaway Postgres service for test-command ($TEST_POSTGRES_URL). Copier question image_test_postgres turns it on, and task test starts a matching container on 127.0.0.1:55432.'
-time: 2026-11-02T21:14:17.550427518-08:00

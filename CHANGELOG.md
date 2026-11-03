@@ -3,6 +3,12 @@
 Notable changes to this repository, newest first. Each PR adds a Changie
 fragment under `.changes/unreleased/`; merging to `main` releases them.
 
+## v0.2.0 - 2026-11-03
+
+### Added
+
+* image.yaml: postgres and postgres-version inputs start a throwaway Postgres service for test-command ($TEST_POSTGRES_URL). Copier question image_test_postgres turns it on, and task test starts a matching container on 127.0.0.1:55432.
+
 ## v0.1.1 - 2026-11-03
 
 ### Fixed
