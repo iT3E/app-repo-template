@@ -1,9 +1,9 @@
 # AGENTS.md
 
 How to work in this repo. It follows the app-repo standard in
-[iT3E/app-template](https://github.com/iT3E/app-template), which manages
-most of the repo setup (`.copier-answers.yml` lists the release); tnwks-ops
-is the reference for anything not covered there.
+[iT3E/app-repo-template](https://github.com/iT3E/app-repo-template), which
+manages most of the repo setup (`.copier-answers.yml` lists the release);
+tnwks-ops is the reference for anything not covered there.
 
 ## What this is
 
@@ -40,9 +40,10 @@ tnwks-ops); `copier update` keeps local edits to this file.
   -race`[% else %]compileall[% if extra_test_command %], the tests[% endif %][% endif %][% if has_image %], the Docker build[% if image_test_command %] and its tests[% endif %][% endif %]), `privacy`, `betterleaks`, `changelog`,
   `actionlint` (workflow changes only), and the labeler. Locally: `task test`[% if language == 'go' %],
   `task lint`[% endif %].
-- The workflows are thin callers of app-template's reusable workflows, and
-  the files listed in app-template's README are managed by Copier. Change
-  them in the template; a template release reaches this repo as a
+- The workflows are thin callers of the reusable workflows in
+  iT3E/github-workflows, pinned by the template, and the files listed in
+  app-repo-template's README are managed by Copier. Change them there; a
+  template release reaches this repo as a
   `copier update` PR (Renovate, label `renovate/template`, or
   `task template:update`). A local edit to a managed file survives
   updates, but keep those rare.

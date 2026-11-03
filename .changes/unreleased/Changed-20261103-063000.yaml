@@ -1,0 +1,4 @@
+kind: Changed
+body: |-
+  The reusable workflows and Renovate presets moved to iT3E/github-workflows (v1.0.0, same names, inputs and jobs), and this repo is now iT3E/app-repo-template with only the Copier template. Rendered callers pin iT3E/github-workflows and the rendered renovate.json5 extends its presets, both at the release in copier.yml's github_workflows. A github-workflows release now reaches app repos as a template release (Renovate bumps the pin here, and merging it releases the template).
+time: 2026-11-03T06:30:00.000000000Z

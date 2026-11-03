@@ -1,22 +1,25 @@
 ---
 name: "Template CI"
 
-# Tests the template itself on every PR and push to main:
+# Tests the template itself on every PR and push to main. The reusable
+# workflows and the Renovate presets live in iT3E/github-workflows (they
+# have their own tests there); this checks the scaffolding that calls them.
 #   lint      copier.yml uses no unsafe Copier feature; shellcheck on
 #             template/bin/*; yamllint on this repo's YAML.
-#   actionlint   this repo's workflows (the reusable ones included).
+#   pins      copier.yml's github_workflows is "<tag>@<the tag's commit>",
+#             and this repo's own callers and Renovate preset use that same
+#             release (Renovate must move them together).
+#   actionlint   this repo's workflows (github-workflows' actionlint.yaml).
 #   render    copier copy for each answers set in tests/ (Go with an image,
 #             Python with a tag-only image, Go without one), then on the
-#             result: actionlint with the reusable workflows swapped in as
-#             local files (so every with:/secrets: is checked against their
-#             inputs), pre-commit validate-config, yamllint, shellcheck, and
-#             the @<sha> pins. Then copier update from the latest tag to
-#             this commit must apply cleanly and match a fresh render.
-#   image     image.yaml itself, on tests/image/ (never pushed: push-main
-#             is false and this workflow doesn't run on tags), with and
-#             without its Postgres service.
-#   renovate  renovate-config-validator on renovate/*.json5, this repo's
-#             config and the rendered repo configs, as repo configs.
+#             result: every caller pins github_workflows; actionlint with
+#             the reusable workflows of that release swapped in as local
+#             files (so every with:/secrets: is checked against their
+#             inputs); pre-commit validate-config, yamllint, shellcheck.
+#             Then copier update from the newest tag this commit descends
+#             from must apply cleanly and match a fresh render.
+#   renovate  renovate-config-validator on this repo's config and the
+#             rendered repo configs, as repo configs.
 on:
   pull_request:
   push:
@@ -69,11 +72,60 @@ jobs:
           pipx run "yamllint==${YAMLLINT_VERSION}" -c .yamllint.yaml \
             .github copier.yml tests .yamllint.yaml .changie.yaml .pre-commit-config.yaml
 
+  pins:
+    name: pins
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: github_workflows is a tag and its commit
+        run: |
+          pin="$(sed -nE '/^github_workflows:/,/^[a-z]/s/^  default: "(v[0-9]+\.[0-9]+\.[0-9]+@[0-9a-f]{40})"$/\1/p' copier.yml)"
+          if [ -z "$pin" ]; then
+            echo "::error file=copier.yml::github_workflows must be \"vX.Y.Z@<40-hex sha>\""; exit 1
+          fi
+          ref="${pin%@*}" sha="${pin#*@}"
+          # An annotated tag: the commit is the peeled ref (^{}).
+          tagged="$(git ls-remote --tags https://github.com/iT3E/github-workflows.git "refs/tags/${ref}^{}" | cut -f1)"
+          if [ "$tagged" != "$sha" ]; then
+            echo "::error file=copier.yml::${ref} of iT3E/github-workflows is ${tagged:-missing}, not ${sha}"; exit 1
+          fi
+          echo "PIN_REF=$ref" >> "$GITHUB_ENV"
+          echo "PIN_SHA=$sha" >> "$GITHUB_ENV"
+          echo "github_workflows: ${ref} (${sha})"
+
+      - name: This repo uses the same release
+        run: |
+          bad="$(grep -rhoE 'iT3E/github-workflows/\.github/workflows/[a-z-]+\.yaml@.*' .github/workflows | grep -vxE "iT3E/github-workflows/\.github/workflows/[a-z-]+\.yaml@${PIN_SHA} # ${PIN_REF}" || true)"
+          if [ -n "$bad" ]; then
+            echo "::error::callers in .github/workflows that aren't ${PIN_SHA} # ${PIN_REF}:"; echo "$bad"; exit 1
+          fi
+          bad="$(grep -oE 'github>iT3E/github-workflows//[^"]+' .github/renovate.json5 | grep -vE "#${PIN_REF}\$" || true)"
+          if [ -n "$bad" ]; then
+            echo "::error file=.github/renovate.json5::presets that aren't #${PIN_REF}:"; echo "$bad"; exit 1
+          fi
+          grep -rc "@${PIN_SHA} # ${PIN_REF}" .github/workflows | grep -v ':0$'
+
+      # github-workflows keeps a copy for its own CI; a difference is a
+      # reminder to update it there, not a reason to block this repo.
+      - name: bin/privacy-check matches github-workflows' copy
+        run: |
+          curl -fsSL "https://raw.githubusercontent.com/iT3E/github-workflows/${PIN_SHA}/bin/privacy-check" -o "$RUNNER_TEMP/privacy-check"
+          code() { sed -n '/^set -euo pipefail/,$p' "$1"; }
+          if ! diff -u <(code "$RUNNER_TEMP/privacy-check") <(code template/bin/privacy-check); then
+            echo "::warning::template/bin/privacy-check differs from iT3E/github-workflows' bin/privacy-check at ${PIN_REF} (below the header); keep them in step"
+          fi
+
   actionlint:
     name: actionlint
     permissions:
       contents: read
-    uses: ./.github/workflows/actionlint.yaml
+    uses: iT3E/github-workflows/.github/workflows/actionlint.yaml@45f64446efd0d5cd93e12c13fb594a3ab32dd0d2 # v1.0.0
 
   render:
     name: render (${{ matrix.answers }})
@@ -88,7 +140,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # copier reads the tags (copier update from the latest one)
+          # copier reads the tags (copier update from the newest one)
           fetch-depth: 0
           persist-credentials: false
 
@@ -112,18 +164,35 @@ jobs:
 
       - name: Answers and pins
         run: |
-          head="$(git rev-parse HEAD)"
+          pin="$(sed -nE '/^github_workflows:/,/^[a-z]/s/^  default: "(v[^@"]+@[0-9a-f]{40})"$/\1/p' copier.yml)"
+          ref="${pin%@*}" sha="${pin#*@}"
+          echo "PIN_SHA=$sha" >> "$GITHUB_ENV"
           cd "$OUT"
           grep -q '^_commit: ' .copier-answers.yml
-          if grep -q '^repo_name:' .copier-answers.yml; then
-            echo "::error::repo_name must not be stored in .copier-answers.yml"; exit 1
+          for q in repo_name github_workflows github_workflows_ref github_workflows_sha; do
+            if grep -q "^${q}:" .copier-answers.yml; then
+              echo "::error::${q} must not be stored in .copier-answers.yml"; exit 1
+            fi
+          done
+          if grep -rn 'iT3E/app-template\|iT3E/app-repo-template/\.github' .github; then
+            echo "::error::a rendered file still calls the template repo"; exit 1
           fi
-          # Every caller pins this exact commit.
-          bad="$(grep -rhoE 'iT3E/app-template/\.github/workflows/[a-z-]+\.yaml@[^ ]+' .github/workflows | grep -v "@${head}\$" || true)"
+          # Every caller pins copier.yml's github_workflows, and the
+          # Renovate presets are that release too.
+          bad="$(grep -rhoE 'uses: [^ ]+' .github/workflows | grep -vxE "uses: iT3E/github-workflows/\.github/workflows/[a-z-]+\.yaml@${sha}" || true)"
           if [ -n "$bad" ]; then
-            echo "::error::caller pins that aren't ${head}:"; echo "$bad"; exit 1
+            echo "::error::callers that don't pin github-workflows ${ref} (${sha}):"; echo "$bad"; exit 1
           fi
-          grep -rc "@${head} # " .github/workflows
+          grep -rc "@${sha} # ${ref}\$" .github/workflows
+          test "$(grep -c "github>iT3E/github-workflows//renovate/[a-z]*\.json5#${ref}\"" .github/renovate.json5)" = 2
+
+      - name: Checkout github-workflows at the pin
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: iT3E/github-workflows
+          ref: ${{ env.PIN_SHA }}
+          path: .github-workflows
+          persist-credentials: false
 
       - name: actionlint (reusable workflows as local files)
         env:
@@ -132,12 +201,14 @@ jobs:
           cp -r "$OUT" "$RUNNER_TEMP/lint-$ANSWERS"
           cd "$RUNNER_TEMP/lint-$ANSWERS"
           git init -q  # actionlint finds the project by its .git
-          for f in "$GITHUB_WORKSPACE"/.github/workflows/*.yaml; do
-            name="$(basename "$f")"
-            case "$name" in self-* | template-ci.yaml) continue ;; esac
-            cp "$f" ".github/workflows/tpl-$name"
+          for f in "$GITHUB_WORKSPACE"/.github-workflows/.github/workflows/*.yaml; do
+            grep -q '^  workflow_call:' "$f" || continue
+            cp "$f" ".github/workflows/tpl-$(basename "$f")"
           done
-          sed -i -E 's#iT3E/app-template/\.github/workflows/([a-z-]+\.yaml)@[0-9a-f]{40} \# .*#./.github/workflows/tpl-\1#' .github/workflows/*.yaml
+          sed -i -E 's#iT3E/github-workflows/\.github/workflows/([a-z-]+\.yaml)@[0-9a-f]{40} \# .*#./.github/workflows/tpl-\1#' .github/workflows/*.yaml
+          if grep -rn 'iT3E/github-workflows/' .github/workflows; then
+            echo "::error::a caller wasn't swapped for its local copy"; exit 1
+          fi
           docker run --rm -v "$PWD":/repo -w /repo "rhysd/actionlint:${ACTIONLINT_VERSION#v}" -color
 
       - name: pre-commit validate-config
@@ -175,39 +246,15 @@ jobs:
           if git status --porcelain | grep -E '\.rej$' || git grep -n -E '^(<<<<<<<|>>>>>>>) ' ; then
             echo "::error::copier update $last -> HEAD left conflicts"; exit 1
           fi
-          # The updated repo must be what a fresh render of HEAD gives.
-          diff -r -x .git "$OUT" "$old"
+          # The updated repo must be what a fresh render of HEAD gives,
+          # except the files created once (_skip_if_exists), which belong
+          # to the repo and stay as they were.
+          skip=()
+          while read -r f; do skip+=(-x "$(basename "$f")"); done \
+            < <(sed -n '/^_skip_if_exists:/,/^[^ ]/s/^  - //p' "$GITHUB_WORKSPACE/copier.yml")
+          echo "Not compared (created once): ${skip[*]}"
+          diff -r -x .git "${skip[@]}" "$OUT" "$old"
           echo "copier update $last -> $(git -C "$GITHUB_WORKSPACE" rev-parse --short HEAD): clean"
-
-  image:
-    name: image (postgres ${{ matrix.postgres }})
-    strategy:
-      fail-fast: false
-      matrix:
-        postgres: [false, true]
-    permissions:
-      contents: read
-      # what image.yaml declares; nothing is pushed from here
-      packages: write
-    uses: ./.github/workflows/image.yaml
-    with:
-      image: ghcr.io/it3e/app-template-test
-      context: tests/image
-      dockerfile: tests/image/Dockerfile
-      push-main: false
-      postgres: ${{ matrix.postgres }}
-      test-command: |
-        test "$(docker run --rm "$IMAGE_REF" ok)" = "ok"
-        test "$(docker run --rm --entrypoint id "$IMAGE_REF" -u)" = "1000"
-        if [ -n "$TEST_POSTGRES_URL" ]; then
-          docker run --rm --network host postgres:18 psql "$TEST_POSTGRES_URL" -tAc 'select 1' | grep -qx 1
-          echo "Postgres service reachable"
-        else
-          if timeout 3 bash -c '</dev/tcp/127.0.0.1/5432' 2>/dev/null; then
-            echo "::error::a Postgres service runs without postgres: true"; exit 1
-          fi
-          echo "No Postgres service, as expected"
-        fi
 
   renovate:
     name: renovate-config
@@ -233,5 +280,5 @@ jobs:
       - name: renovate-config-validator
         run: |
           npx --yes --package "renovate@${RENOVATE_VERSION}" -- renovate-config-validator --strict --no-global \
-            renovate/*.json5 .github/renovate.json5 \
+            .github/renovate.json5 \
             "$RUNNER_TEMP"/example-*/.github/renovate.json5

@@ -1,9 +1,22 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
-  // The template repo itself: the same base its app repos get. Version bumps
-  // here (actions in the reusable workflows, hook revs and CI tools in
-  // template/) reach the app repos with the next template release.
-  extends: ["github>iT3E/app-template//renovate/default.json5"],
+  // The template repo itself: the same base its app repos get, at the
+  // github-workflows release copier.yml pins. Version bumps here (hook revs
+  // and CI tools in template/, the github-workflows pin) reach the app repos
+  // with the next template release.
+  extends: ["github>iT3E/github-workflows//renovate/default.json5#v1.0.0"],
+  customManagers: [
+    {
+      // copier.yml's github_workflows: "vX.Y.Z@<sha>", the release every
+      // rendered caller and preset uses.
+      customType: "regex",
+      description: "The iT3E/github-workflows release copier.yml renders into app repos",
+      managerFilePatterns: ["/^copier\\.yml$/"],
+      matchStrings: [
+        "# renovate: datasource=(?<datasource>github-tags) depName=(?<depName>iT3E/github-workflows)\\n\\s*default: \"(?<currentValue>v[^@\"]+)@(?<currentDigest>[0-9a-f]{40})\"",
+      ],
+    },
+  ],
   packageRules: [
     {
       // default.json5 turns these files off in app repos (the template owns
@@ -11,6 +24,32 @@
       description: "The template's own workflows and Taskfile",
       matchFileNames: [".github/workflows/**", ".pre-commit-config.yaml", "Taskfile.yml"],
       enabled: true,
+    },
+    {
+      // The one PR that moves a github-workflows release into the template:
+      // copier.yml's pin (custom.regex), this repo's own callers
+      // (github-actions) and its preset (renovate-config). default.json5
+      // turns the last two off for app repos, which get them from here.
+      // Green template CI merges it, and the merge releases the template
+      // (release.yaml adds the fragment), so app repos get it as one copier
+      // update PR. No waiting: it is our own release, and this repo is
+      // public, so Actions minutes are free.
+      description: "iT3E/github-workflows: one grouped PR, automerged when green",
+      matchPackageNames: ["iT3E/github-workflows"],
+      enabled: true,
+      groupName: "github-workflows",
+      addLabels: ["renovate/github-workflows"],
+      minimumReleaseAge: null,
+      schedule: ["at any time"],
+      automerge: true,
+    },
+    {
+      // A major changes an interface the callers use; template CI lints the
+      // callers against it, but a person reads the release notes first.
+      description: "iT3E/github-workflows majors: reviewed",
+      matchPackageNames: ["iT3E/github-workflows"],
+      matchUpdateTypes: ["major"],
+      automerge: false,
     },
   ],
 }

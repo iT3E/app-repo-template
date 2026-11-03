@@ -1,7 +1,7 @@
 # Copier template for an app repo (https://copier.readthedocs.io).
 #
-#   copier copy --vcs-ref v0.1.0 https://github.com/iT3E/app-template.git <dir>
-#   copier update --vcs-ref v0.1.1        # in a repo made from it
+#   copier copy --vcs-ref vX.Y.Z https://github.com/iT3E/app-repo-template.git <dir>
+#   copier update --vcs-ref vX.Y.Z        # in a repo made from it
 #
 # Kept free of Copier's unsafe features (_tasks, _migrations,
 # _jinja_extensions, _external_data): Renovate's hosted copier manager runs
@@ -39,7 +39,30 @@ _message_after_copy: |
     1. Set the PRIVACY_TERMS Actions secret: task privacy:sync
     2. Install the hooks: task precommit:init
     3. Run bin/privacy-check, then open everything as one PR.
-  See https://github.com/iT3E/app-template#create-a-new-app-repo
+  See https://github.com/iT3E/app-repo-template#create-a-new-app-repo
+
+# The iT3E/github-workflows release every rendered caller (@<sha> # vX.Y.Z)
+# and Renovate preset (#vX.Y.Z) uses, as "<tag>@<the tag's commit>". It is
+# the one place that version lives: Renovate here bumps it (with this
+# repo's own callers, in one PR), merging that releases the template, and
+# app repos get it with copier update. App repos never bump it themselves,
+# so the update never conflicts (README "How updates flow"). Not asked and
+# not stored in .copier-answers.yml.
+github_workflows:
+  type: str
+  # renovate: datasource=github-tags depName=iT3E/github-workflows
+  default: "v1.0.0@45f64446efd0d5cd93e12c13fb594a3ab32dd0d2"
+  when: false
+
+github_workflows_ref:
+  type: str
+  default: "[[ github_workflows.split('@')[0] ]]"
+  when: false
+
+github_workflows_sha:
+  type: str
+  default: "[[ github_workflows.split('@')[1] ]]"
+  when: false
 
 # Not asked and not stored: the destination directory's name (normally the
 # repo name, also in Renovate's checkout). It only fills files created once

@@ -1,5 +1,5 @@
 ---
-# Synced to the repo by .github/workflows/self-sync-labels.yaml (labels not
+# Synced to the repo by .github/workflows/meta-sync-labels.yaml (labels not
 # listed here are deleted). Same scheme as tnwks-ops' .github/labels.yaml.
 # Area: names must match .github/labeler.yaml
 - name: area/docs
@@ -9,11 +9,11 @@
 - name: area/github
   color: "72ccf3"
   description: >-
-    Changes made in the .github directory (reusable workflows included)
+    Changes made in the .github directory
 - name: area/renovate
   color: "72ccf3"
   description: >-
-    Changes to the Renovate presets
+    Changes to this repo's Renovate config
 - name: area/template
   color: "72ccf3"
   description: >-
@@ -25,6 +25,9 @@
   color: "ffc300"
 - name: renovate/github-release
   color: "ffc300"
+- name: renovate/github-workflows
+  color: "ffc300"
+  description: "iT3E/github-workflows release (the pin in copier.yml)"
 # Semantic Type
 - name: type/patch
   color: "FFEC19"
