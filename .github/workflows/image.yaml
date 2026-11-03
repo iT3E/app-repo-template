@@ -18,7 +18,9 @@ name: "Image"
 # the caller's PRIVACY_TERMS secret. A missing secret fails the push.
 #
 # test-command runs against a local build before the push; $IMAGE_REF is its
-# tag. Build args VERSION (the metadata version: 1.2.3, main or pr-<n>) and
+# tag. With postgres: true a throwaway Postgres (trust auth, user and
+# database postgres) runs as a service on 127.0.0.1:5432, and
+# $TEST_POSTGRES_URL points at it; containers reach it with --network host. Build args VERSION (the metadata version: 1.2.3, main or pr-<n>) and
 # REVISION (the commit) are always passed, plus build-args.
 on:
   workflow_call:
@@ -55,6 +57,15 @@ on:
         description: "Bash run against the locally built image ($IMAGE_REF) before any push. Empty: none."
         type: string
         default: ""
+      postgres:
+        description: "Start a throwaway Postgres for test-command ($TEST_POSTGRES_URL)."
+        type: boolean
+        default: false
+      postgres-version:
+        description: "Postgres image tag for postgres: true."
+        type: string
+        # renovate: datasource=docker depName=postgres
+        default: "18"
     secrets:
       PRIVACY_TERMS:
         description: "The privacy denylist (tnwks-ops), needed only for a push."
@@ -75,6 +86,19 @@ jobs:
       packages: write
     outputs:
       digest: ${{ steps.push.outputs.digest }}
+    services:
+      postgres:
+        # An empty image starts no service (postgres: false).
+        image: ${{ inputs.postgres && format('postgres:{0}', inputs.postgres-version) || '' }}
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -178,6 +202,7 @@ jobs:
         if: inputs.test-command != ''
         env:
           IMAGE_REF: ${{ steps.plan.outputs.local }}
+          TEST_POSTGRES_URL: ${{ inputs.postgres && 'postgresql://postgres@127.0.0.1:5432/postgres?sslmode=disable' || '' }}
           TEST_COMMAND: ${{ inputs.test-command }}
         run: |
           printf '%s\n' "$TEST_COMMAND" > "$RUNNER_TEMP/image-test.sh"

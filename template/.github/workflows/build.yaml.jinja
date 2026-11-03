@@ -79,6 +79,9 @@ jobs:
       test-command: |
         [[ image_test_command | trim | indent(8) ]]
 [% endif %]
+[% if image_test_command and image_test_postgres %]
+      postgres: true
+[% endif %]
     secrets:
       PRIVACY_TERMS: ${{ secrets.PRIVACY_TERMS }}
 [% endif %]

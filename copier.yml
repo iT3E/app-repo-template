@@ -100,3 +100,12 @@ image_test_command:
   default: ""
   multiline: true
   when: "[[ has_image ]]"
+
+image_test_postgres:
+  type: bool
+  help: >-
+    Start a throwaway Postgres for image_test_command? It listens on
+    127.0.0.1:5432 in CI ($TEST_POSTGRES_URL; containers need --network
+    host), and task test starts one on 127.0.0.1:55432.
+  default: false
+  when: "[[ has_image and image_test_command != '' ]]"
