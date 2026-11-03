@@ -186,13 +186,14 @@ jobs:
           grep -rc "@${sha} # ${ref}\$" .github/workflows
           test "$(grep -c "github>iT3E/github-workflows//renovate/[a-z]*\.json5#${ref}\"" .github/renovate.json5)" = 2
 
-      - name: Checkout github-workflows at the pin
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: iT3E/github-workflows
-          ref: ${{ env.PIN_SHA }}
-          path: .github-workflows
-          persist-credentials: false
+      # Outside the workspace: copier copies from it with git, and a
+      # nested repository there would look like a broken submodule.
+      - name: Fetch github-workflows at the pin
+        run: |
+          git init -q "$RUNNER_TEMP/github-workflows"
+          cd "$RUNNER_TEMP/github-workflows"
+          git fetch -q --depth 1 https://github.com/iT3E/github-workflows.git "$PIN_SHA"
+          git checkout -q FETCH_HEAD
 
       - name: actionlint (reusable workflows as local files)
         env:
@@ -201,7 +202,7 @@ jobs:
           cp -r "$OUT" "$RUNNER_TEMP/lint-$ANSWERS"
           cd "$RUNNER_TEMP/lint-$ANSWERS"
           git init -q  # actionlint finds the project by its .git
-          for f in "$GITHUB_WORKSPACE"/.github-workflows/.github/workflows/*.yaml; do
+          for f in "$RUNNER_TEMP"/github-workflows/.github/workflows/*.yaml; do
             grep -q '^  workflow_call:' "$f" || continue
             cp "$f" ".github/workflows/tpl-$(basename "$f")"
           done
