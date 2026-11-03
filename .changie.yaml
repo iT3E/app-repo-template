@@ -1,7 +1,7 @@
 ---
 # Changie: https://changie.dev
 #   changie new     add a fragment for your PR (.changes/unreleased/)
-# Releases are cut on merge to main by .github/workflows/self-release.yaml:
+# Releases are cut on merge to main by .github/workflows/release.yaml:
 # fragments are batched into .changes/<version>.md and CHANGELOG.md, tagged, and
 # published as a GitHub Release. The bump
 # comes from the highest kind present.

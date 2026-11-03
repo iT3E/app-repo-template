@@ -1,0 +1,21 @@
+---
+name: "Sync labels"
+
+# This repo's own caller of the iT3E/github-workflows reusable workflow, at
+# the release copier.yml pins (github_workflows; template-ci checks they
+# match, and Renovate moves them together).
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths: [".github/labels.yaml"]
+
+permissions: {}
+
+jobs:
+  labels:
+    name: sync-labels
+    permissions:
+      contents: read
+      issues: write
+    uses: iT3E/github-workflows/.github/workflows/sync-labels.yaml@45f64446efd0d5cd93e12c13fb594a3ab32dd0d2 # v1.0.0

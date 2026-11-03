@@ -1,0 +1,20 @@
+---
+name: "Labeler"
+
+# This repo's own caller of the iT3E/github-workflows reusable workflow, at
+# the release copier.yml pins (github_workflows; template-ci checks they
+# match, and Renovate moves them together).
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: ["main"]
+
+permissions: {}
+
+jobs:
+  labeler:
+    name: labeler
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: iT3E/github-workflows/.github/workflows/labeler.yaml@45f64446efd0d5cd93e12c13fb594a3ab32dd0d2 # v1.0.0

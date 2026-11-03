@@ -1,7 +1,7 @@
 ---
 version: "3"
 
-# Managed by Copier from https://github.com/iT3E/app-template. Same task
+# Managed by Copier from https://github.com/iT3E/app-repo-template. Same task
 # names as tnwks-ops where they overlap (precommit:*, privacy:*).
 
 [% if has_image and image_test_command and image_test_postgres %]
@@ -44,7 +44,7 @@ tasks:
       - changie new
 
   template:update:
-    desc: Update the Copier-managed files to the latest app-template release (task template:update -- --vcs-ref vX.Y.Z for another)
+    desc: Update the Copier-managed files to the latest app-repo-template release (task template:update -- --vcs-ref vX.Y.Z for another)
     cmds:
       - copier update --skip-answered --defaults {{.CLI_ARGS}}
 

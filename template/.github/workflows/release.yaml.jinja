@@ -1,10 +1,11 @@
 ---
 name: "Release"
 
-# Managed by Copier from https://github.com/iT3E/app-template (see
-# .copier-answers.yml). The logic is in the reusable workflow it calls;
-# change that in the template, and a template release reaches this repo as
-# a `copier update` PR. The @<sha> pin is that release.
+# Managed by Copier from https://github.com/iT3E/app-repo-template (see
+# .copier-answers.yml). The logic is in the reusable workflow it calls, from
+# https://github.com/iT3E/github-workflows. The template pins that release
+# (@<sha> # vX.Y.Z), and a template release moves it here as a
+# `copier update` PR.
 #
 # Cuts a release from the Changie fragments a merged PR added: batch them
 # into .changes/<version>.md and CHANGELOG.md, commit, tag vX.Y.Z, publish a
@@ -40,7 +41,7 @@ jobs:
       contents: write
       # dispatch build.yaml on the tag
       actions: write
-    uses: iT3E/app-template/.github/workflows/release.yaml@[[ _copier_conf.vcs_ref_hash ]] # [[ _commit ]]
+    uses: iT3E/github-workflows/.github/workflows/release.yaml@[[ github_workflows_sha ]] # [[ github_workflows_ref ]]
     with:
       bump: ${{ inputs.bump || 'auto' }}
       build-workflow: "[% if has_image %]build.yaml[% endif %]"

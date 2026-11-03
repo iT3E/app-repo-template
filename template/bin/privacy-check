@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Fail if any denylisted term (family names, personal emails) appears in the
 # repo, a commit or a GitHub text. Managed by Copier from
-# https://github.com/iT3E/app-template; same matching as tnwks-ops
-# bin/privacy-check (keep the two in step). Images built from app repos are
+# https://github.com/iT3E/app-repo-template; same matching as tnwks-ops
+# bin/privacy-check and the copy in iT3E/github-workflows (keep all three in
+# step). Images built from app repos are
 # public, so nothing personal may land here.
 #
 #   bin/privacy-check                 # tracked files (working tree) + paths
