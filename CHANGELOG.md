@@ -3,6 +3,13 @@
 Notable changes to this repository, newest first. Each PR adds a Changie
 fragment under `.changes/unreleased/`; merging to `main` releases them.
 
+## v0.4.0 - 2026-11-03
+
+### Changed
+
+* Rendered workflow callers and Renovate presets: iT3E/github-workflows v1.0.2 to v1.1.0 (https://github.com/iT3E/github-workflows/releases/tag/v1.1.0).
+* Releases and template updates no longer need a hand step. The rendered release.yaml (repos with an image) runs on every push to main with auto-fragment "Dependency updates": a Renovate merge that changed what goes into the image releases a patch by itself, while template and CI-only updates release nothing. Template update PRs automerge once green (iT3E/github-workflows v1.1.0 presets). This repo releases a patch when a Renovate merge changes template/ or copier.yml.
+
 ## v0.3.1 - 2026-11-03
 
 ### Fixed

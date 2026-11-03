@@ -1,4 +1,0 @@
-kind: Changed
-body: |-
-  Releases and template updates no longer need a hand step. The rendered release.yaml (repos with an image) runs on every push to main with auto-fragment "Dependency updates": a Renovate merge that changed what goes into the image releases a patch by itself, while template and CI-only updates release nothing. Template update PRs automerge once green (iT3E/github-workflows v1.1.0 presets). This repo releases a patch when a Renovate merge changes template/ or copier.yml.
-time: 2026-11-03T07:45:00.000000000Z
