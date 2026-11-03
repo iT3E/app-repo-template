@@ -42,5 +42,5 @@ tasks:
     desc: Render every answers set in tests/ from the last commit into out/<name>/ (commit first; copier reads git)
     cmds:
       - rm -rf "{{.OUT}}"
-      - for: [go, python, go-lib]
+      - for: [go, python, node, go-lib]
         cmd: copier copy --quiet --defaults --data-file tests/{{.ITEM}}.yml --vcs-ref HEAD "{{.ROOT_DIR}}" "{{.OUT}}/example-{{.ITEM}}"

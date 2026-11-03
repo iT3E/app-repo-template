@@ -1,4 +1,4 @@
-# editorconfig.org (tnwks-ops' .editorconfig, plus [[ 'Go' if language == 'go' else 'Python' ]])
+# editorconfig.org (tnwks-ops' .editorconfig, plus [[ {'go': 'Go', 'python': 'Python', 'node': 'Node'}[language] ]])
 root = true
 
 [*]
@@ -14,7 +14,7 @@ insert_final_newline = true
 # gofmt: tabs
 indent_style = tab
 indent_size = 4
-[% else %]
+[% elif language == 'python' %]
 [*.py]
 indent_size = 4
 [% endif %]

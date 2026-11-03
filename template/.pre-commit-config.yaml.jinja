@@ -43,6 +43,15 @@ repos:
         entry: gofmt -l -w
         language: golang
         types: [go]
+[% elif language == 'node' %]
+      # Formatter: the repo's own prettier (a devDependency), so the hook and
+      # CI's format check never disagree on the version. Run npm ci first.
+      # Files in .prettierignore are skipped.
+      - id: prettier
+        name: prettier
+        entry: npx --no-install prettier --write --ignore-unknown
+        language: system
+        types: [text]
 [% else %]
   # Formatter. CI runs ruff only where the repo turned it on (build.yaml).
   - repo: https://github.com/astral-sh/ruff-pre-commit

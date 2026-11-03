@@ -51,7 +51,7 @@ _message_after_copy: |
 github_workflows:
   type: str
   # renovate: datasource=github-tags depName=iT3E/github-workflows
-  default: "v1.1.0@e05083a9e404e4e3ade5ded0c35f3d6692cd3f15"
+  default: "v1.2.0@b64d92c664cdce3b7f7bc7e481b6b8d3572c442d"
   when: false
 
 github_workflows_ref:
@@ -78,6 +78,7 @@ language:
   choices:
     - go
     - python
+    - node
 
 has_image:
   type: bool
@@ -110,6 +111,24 @@ python_version:
   help: "Python version for CI's host-side checks"
   default: "3.12"
   when: "[[ language == 'python' ]]"
+
+node_version:
+  type: str
+  help: "Node version for CI (.nvmrc: read the version file; anything else pins setup-node)"
+  default: .nvmrc
+  when: "[[ language == 'node' ]]"
+
+node_lint:
+  type: bool
+  help: "Run the package's lint script (npm run lint) in CI?"
+  default: true
+  when: "[[ language == 'node' ]]"
+
+node_format_check:
+  type: bool
+  help: "Run prettier --check in CI? Needs prettier as a devDependency."
+  default: true
+  when: "[[ language == 'node' ]]"
 
 extra_test_command:
   type: str

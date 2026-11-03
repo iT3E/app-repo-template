@@ -9,6 +9,8 @@ name: "Build"
 #
 [% if language == 'go' %]
 # go: gofmt, go vet, golangci-lint (PRs, new issues only), go test -race.
+[% elif language == 'node' %]
+# node: npm ci, then the package's [% if node_lint %]lint, [% endif %][% if node_format_check %]prettier --check, [% endif %]test and build scripts.
 [% else %]
 # python: compileall (plus ruff and tests where enabled).
 [% endif %]
@@ -47,6 +49,24 @@ jobs:
       extra-test-command: |
         [[ extra_test_command | trim | indent(8) ]]
 [% endif %]
+[% endif %]
+[% elif language == 'node' %]
+  node:
+    name: node
+    permissions:
+      contents: read
+    uses: iT3E/github-workflows/.github/workflows/node.yaml@[[ github_workflows_sha ]] # [[ github_workflows_ref ]]
+    with:
+[% if node_version == '.nvmrc' %]
+      node-version-file: .nvmrc
+[% else %]
+      node-version: "[[ node_version ]]"
+[% endif %]
+      lint: [[ node_lint | lower ]]
+      format-check: [[ node_format_check | lower ]]
+[% if extra_test_command %]
+      test-command: |
+        [[ extra_test_command | trim | indent(8) ]]
 [% endif %]
 [% else %]
   python:

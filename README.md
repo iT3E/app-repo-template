@@ -40,7 +40,7 @@ caller of the github-workflows workflow of the same purpose, pinned
 
 | File | What it does |
 | --- | --- |
-| `.github/workflows/build.yaml` | `go` or `python` checks, then `image`: Docker build on PRs, push from `main` and/or `v*` tags |
+| `.github/workflows/build.yaml` | `go`, `python` or `node` checks, then `image`: Docker build on PRs, push from `main` and/or `v*` tags |
 | `.github/workflows/actionlint.yaml` | actionlint (with shellcheck) when a PR touches workflows |
 | `.github/workflows/secret-scan.yaml` | betterleaks over the commits a PR (or a push to `main`) adds |
 | `.github/workflows/privacy.yaml` | `bin/privacy-check` on the tree, the commits and identities, and the PR title and body |
@@ -52,9 +52,9 @@ caller of the github-workflows workflow of the same purpose, pinned
 | `.github/renovate.json5` | extends the github-workflows presets at the release the template pins |
 | `.pre-commit-config.yaml` | betterleaks, privacy-check (staged files, git identity, commit message), the formatter |
 | `.betterleaks.toml` | upstream rules plus a prose-credential rule |
-| `.editorconfig`, `.gitattributes` | LF, UTF-8, two spaces; tabs for Go, four spaces for Python |
+| `.editorconfig`, `.gitattributes` | LF, UTF-8, two spaces; tabs for Go, four spaces for Python; `package-lock.json` marked generated (Node) |
 | `.changie.yaml`, `.changes/header.tpl.md` | changelog fragments and their format |
-| `Taskfile.yml` | `precommit:init`, `precommit:run`, `privacy:check`, `privacy:sync`, `changelog:new`, `template:update`, `test`, plus `lint` (Go) or `format` (Python) |
+| `Taskfile.yml` | `precommit:init`, `precommit:run`, `privacy:check`, `privacy:sync`, `changelog:new`, `template:update`, `test`, plus `lint` (Go), `format` (Python) or `format` and `lint` (Node) |
 | `bin/privacy-check` | the denylist check |
 | `bin/install-hooks` | `pre-commit install --install-hooks`, then checks that the denylist loads |
 | `AGENTS.md` | how to work in the repo, the privacy rules, no emdashes in prose |
@@ -64,7 +64,7 @@ Created once, then owned by the repo (`_skip_if_exists`): `README.md`
 (with a "Workflow" section), `CHANGELOG.md`, `.gitignore`, `.golangci.yml`
 (Go) and `.github/privacy-allow`.
 
-Not managed: the code, `Dockerfile`, `go.mod`, requirements, tests, and
+Not managed: the code, `Dockerfile`, `go.mod`, requirements, `package.json`, tests, and
 any extra workflow a repo adds for itself.
 
 ### Questions
@@ -73,13 +73,16 @@ any extra workflow a repo adds for itself.
 
 | Question | Default | Used for |
 | --- | --- | --- |
-| `language` | (none) | `go` or `python`: the CI job, hooks, labels, editorconfig, Taskfile, Renovate preset |
+| `language` | (none) | `go`, `python` or `node`: the CI job, hooks, labels, editorconfig, Taskfile, Renovate preset |
 | `has_image` | `true` | whether `build.yaml` has the `image` job (and release dispatches it) |
 | `image_name` | empty | the image; empty means `ghcr.io/<owner>/<repo>` from the repo CI runs in |
 | `image_push_main` | `true` | `true`: push `:main` and `:sha-<short>` from `main`. `false`: only `v*` tags push, and the push gate checks the whole history |
 | `go_version` | `go.mod` | `go.mod` reads the go directive; anything else pins setup-go |
 | `python_version` | `3.12` | setup-python for the host-side Python checks |
-| `extra_test_command` | empty | bash after the language tests (Go: after `go test`; Python: after compileall) |
+| `node_version` | `.nvmrc` | `.nvmrc` reads the version file; anything else pins setup-node |
+| `node_lint` | `true` | run the package's `lint` script in CI |
+| `node_format_check` | `true` | run `prettier --check .` in CI (prettier must be a devDependency) |
+| `extra_test_command` | empty | bash after the language tests (Go: after `go test`; Python: after compileall; Node: after the build) |
 | `image_test_command` | empty | bash against the locally built image before any push; `$IMAGE_REF` is its tag |
 | `image_test_postgres` | `false` | a throwaway Postgres for `image_test_command`: CI's service on `127.0.0.1:5432`, `task test`'s container on `127.0.0.1:55432`, both as `$TEST_POSTGRES_URL` (containers reach it with `--network host`) |
 
@@ -203,6 +206,12 @@ them, and Renovate's `ignoreTests: false` does the same for its own PRs.
   parse; no dependencies needed), then ruff and host-side tests where the
   repo turns them on. Tests that need the app's environment run in the
   image instead (`image_test_command`).
+- **Node** (`node / check`): `npm ci` (a `package-lock.json` is required),
+  then the package's own scripts: `npm run lint` and `prettier --check .`
+  where turned on, `npm test` (it must exit on its own: no watch mode) and
+  `npm run build`. Nothing is framework specific; an Angular app's scripts
+  run `ng lint`, `ng test --watch=false` and `ng build`. The Node version
+  comes from `.nvmrc` unless `node_version` pins one.
 - **Image** (`image / image`): the Docker build, then `image_test_command`
   against it (with a throwaway Postgres if `image_test_postgres`), all
   without pushing. A long or changing test belongs in a script the repo
@@ -302,9 +311,11 @@ precommit:init`:
 - `privacy-check` (`bin/privacy-check --cached`: staged files and your git
   identity) and `privacy-check-message` (the commit message)
 - the formatter: `gofmt -l -w` as a `language: golang` hook (pre-commit
-  downloads Go if it isn't installed), or `ruff-format`. A repo whose code
-  isn't formatted yet can move ruff to `stages: [manual]` locally until a
-  formatting PR lands.
+  downloads Go if it isn't installed), `ruff-format`, or prettier (Node:
+  the repo's own prettier through `npx --no-install`, so the hook and CI
+  never disagree on its version; run `npm ci` first). A repo whose code
+  isn't formatted yet can move the formatter to `stages: [manual]` locally
+  until a formatting PR lands.
 
 golangci-lint runs in CI only (`task lint` runs it in Docker).
 
