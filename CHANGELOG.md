@@ -3,6 +3,12 @@
 Notable changes to this repository, newest first. Each PR adds a Changie
 fragment under `.changes/unreleased/`; merging to `main` releases them.
 
+## v0.8.0 - 2026-11-08
+
+### Changed
+
+* Rendered workflow callers and Renovate presets: iT3E/github-workflows v1.4.2 to v1.8.1 (https://github.com/iT3E/github-workflows/releases/tag/v1.8.1).
+
 ## v0.7.1 - 2026-11-06
 
 ### Fixed
