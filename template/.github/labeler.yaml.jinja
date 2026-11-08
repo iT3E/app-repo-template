@@ -27,7 +27,7 @@ area/node:
           - "*.config.{js,mjs,cjs,ts}"
           - "tsconfig*.json"
           - "angular.json"
-[% else %]
+[% elif language == 'python' %]
 area/python:
   - changed-files:
       - any-glob-to-any-file: ["**/*.py", "**/requirements*.txt", "constraints.txt", "pyproject.toml"]

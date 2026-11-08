@@ -6,6 +6,8 @@
   // copier update keeps them.
   extends: [
     "github>iT3E/github-workflows//renovate/default.json5#[[ github_workflows_ref ]]",
+[% if language != 'none' %]
     "github>iT3E/github-workflows//renovate/[[ language ]].json5#[[ github_workflows_ref ]]",
+[% endif %]
   ],
 }

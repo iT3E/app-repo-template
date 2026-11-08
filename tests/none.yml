@@ -1,0 +1,3 @@
+---
+# Answers for template-ci.yaml's docs-only render (no build job, no image).
+language: none

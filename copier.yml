@@ -72,18 +72,23 @@ repo_name:
   default: "[[ _copier_conf.dst_path | realpath | basename ]]"
   when: false
 
+# none: a docs-only repo (Markdown, no code). No build.yaml, no image and no
+# language Renovate preset; privacy, secret scan, changelog, release, labels
+# and actionlint are the same as in every other repo.
 language:
   type: str
-  help: "Language of the app"
+  help: "Language of the app (none: a docs-only repo, no build job)"
   choices:
     - go
     - python
     - node
+    - none
 
 has_image:
   type: bool
   help: "Does CI build a Dockerfile into a (public) GHCR image?"
-  default: true
+  default: "[[ language != 'none' ]]"
+  when: "[[ language != 'none' ]]"
 
 image_name:
   type: str
@@ -135,6 +140,7 @@ extra_test_command:
   help: "Extra bash for CI after the language tests (empty: none)"
   default: ""
   multiline: true
+  when: "[[ language != 'none' ]]"
 
 image_test_command:
   type: str

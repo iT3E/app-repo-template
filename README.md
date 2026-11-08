@@ -40,7 +40,7 @@ caller of the github-workflows workflow of the same purpose, pinned
 
 | File | What it does |
 | --- | --- |
-| `.github/workflows/build.yaml` | `go`, `python` or `node` checks, then `image`: Docker build on PRs, push from `main` and/or `v*` tags |
+| `.github/workflows/build.yaml` | `go`, `python` or `node` checks, then `image`: Docker build on PRs, push from `main` and/or `v*` tags. Not rendered for `none` |
 | `.github/workflows/actionlint.yaml` | actionlint (with shellcheck) when a PR touches workflows |
 | `.github/workflows/secret-scan.yaml` | betterleaks over the commits a PR (or a push to `main`) adds |
 | `.github/workflows/privacy.yaml` | `bin/privacy-check` on the tree, the commits and identities, and the PR title and body |
@@ -50,11 +50,11 @@ caller of the github-workflows workflow of the same purpose, pinned
 | `.github/workflows/meta-labeler.yaml`, `.github/labeler.yaml` | `area/*` labels from the changed paths |
 | `.github/workflows/meta-sync-labels.yaml`, `.github/labels.yaml` | labels synced from the file (others deleted) |
 | `.github/renovate.json5` | extends the github-workflows presets at the release the template pins |
-| `.pre-commit-config.yaml` | betterleaks, privacy-check (staged files, git identity, commit message), the formatter |
+| `.pre-commit-config.yaml` | betterleaks, privacy-check (staged files, git identity, commit message), the formatter (none for `none`) |
 | `.betterleaks.toml` | upstream rules plus a prose-credential rule |
 | `.editorconfig`, `.gitattributes` | LF, UTF-8, two spaces; tabs for Go, four spaces for Python; `package-lock.json` marked generated (Node) |
 | `.changie.yaml`, `.changes/header.tpl.md` | changelog fragments and their format |
-| `Taskfile.yml` | `precommit:init`, `precommit:run`, `privacy:check`, `privacy:sync`, `changelog:new`, `template:update`, `test`, plus `lint` (Go), `format` (Python) or `format` and `lint` (Node) |
+| `Taskfile.yml` | `precommit:init`, `precommit:run`, `privacy:check`, `privacy:sync`, `changelog:new`, `template:update`, plus `test` and `lint` (Go), `test` and `format` (Python), or `test`, `format` and `lint` (Node) |
 | `bin/privacy-check` | the denylist check |
 | `bin/install-hooks` | `pre-commit install --install-hooks`, then checks that the denylist loads |
 | `AGENTS.md` | how to work in the repo, the privacy rules, no emdashes in prose |
@@ -73,8 +73,8 @@ any extra workflow a repo adds for itself.
 
 | Question | Default | Used for |
 | --- | --- | --- |
-| `language` | (none) | `go`, `python` or `node`: the CI job, hooks, labels, editorconfig, Taskfile, Renovate preset |
-| `has_image` | `true` | whether `build.yaml` has the `image` job (and release dispatches it) |
+| `language` | (no default) | `go`, `python` or `node`: the CI job, hooks, labels, editorconfig, Taskfile, Renovate preset. `none` is a docs-only repo: no `build.yaml`, no image, no formatter and no language preset; every other workflow is the same |
+| `has_image` | `true` | whether `build.yaml` has the `image` job (and release dispatches it). Not asked for `none` |
 | `image_name` | empty | the image; empty means `ghcr.io/<owner>/<repo>` from the repo CI runs in |
 | `image_push_main` | `true` | `true`: push `:main` and `:sha-<short>` from `main`. `false`: only `v*` tags push, and the push gate checks the whole history |
 | `go_version` | `go.mod` | `go.mod` reads the go directive; anything else pins setup-go |
@@ -82,7 +82,7 @@ any extra workflow a repo adds for itself.
 | `node_version` | `.nvmrc` | `.nvmrc` reads the version file; anything else pins setup-node |
 | `node_lint` | `true` | run the package's `lint` script in CI |
 | `node_format_check` | `true` | run `prettier --check .` in CI (prettier must be a devDependency) |
-| `extra_test_command` | empty | bash after the language tests (Go: after `go test`; Python: after compileall; Node: after the build) |
+| `extra_test_command` | empty | bash after the language tests (Go: after `go test`; Python: after compileall; Node: after the build). Not asked for `none` |
 | `image_test_command` | empty | bash against the locally built image before any push; `$IMAGE_REF` is its tag |
 | `image_test_postgres` | `false` | a throwaway Postgres for `image_test_command`: CI's service on `127.0.0.1:5432`, `task test`'s container on `127.0.0.1:55432`, both as `$TEST_POSTGRES_URL` (containers reach it with `--network host`) |
 
