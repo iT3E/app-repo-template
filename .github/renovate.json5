@@ -4,7 +4,7 @@
   // github-workflows release copier.yml pins. Version bumps here (hook revs
   // and CI tools in template/, the github-workflows pin) reach the app repos
   // with the next template release.
-  extends: ["github>iT3E/github-workflows//renovate/default.json5#v1.4.2"],
+  extends: ["github>iT3E/github-workflows//renovate/default.json5#v1.8.1"],
   customManagers: [
     {
       // copier.yml's github_workflows: "vX.Y.Z@<sha>", the release every
