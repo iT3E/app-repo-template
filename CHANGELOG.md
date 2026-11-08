@@ -3,6 +3,12 @@
 Notable changes to this repository, newest first. Each PR adds a Changie
 fragment under `.changes/unreleased/`; merging to `main` releases them.
 
+## v0.9.0 - 2026-11-08
+
+### Added
+
+* language: none renders a docs-only repo with no build.yaml, no image and no language Renovate preset; privacy, secret scan, changelog, release, labels and actionlint are the same as in every other repo. Repos on go, python or node render exactly as before
+
 ## v0.8.0 - 2026-11-08
 
 ### Changed
