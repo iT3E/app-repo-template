@@ -1,0 +1,3 @@
+kind: Added
+body: 'language: none renders a docs-only repo with no build.yaml, no image and no language Renovate preset; privacy, secret scan, changelog, release, labels and actionlint are the same as in every other repo. Repos on go, python or node render exactly as before'
+time: 2026-11-08T14:40:09.12193125-08:00

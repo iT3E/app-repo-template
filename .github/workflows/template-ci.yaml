@@ -11,7 +11,8 @@ name: "Template CI"
 #             release (Renovate must move them together).
 #   actionlint   this repo's workflows (github-workflows' actionlint.yaml).
 #   render    copier copy for each answers set in tests/ (Go with an image,
-#             Python with a tag-only image, Go without one), then on the
+#             Python with a tag-only image, Go without one, Node, and a
+#             docs-only repo with no build job), then on the
 #             result: every caller pins github_workflows; actionlint with
 #             the reusable workflows of that release swapped in as local
 #             files (so every with:/secrets: is checked against their
@@ -135,7 +136,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        answers: [go, python, node, go-lib]
+        answers: [go, python, node, go-lib, none]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -184,7 +185,10 @@ jobs:
             echo "::error::callers that don't pin github-workflows ${ref} (${sha}):"; echo "$bad"; exit 1
           fi
           grep -rc "@${sha} # ${ref}\$" .github/workflows
-          test "$(grep -c "github>iT3E/github-workflows//renovate/[a-z]*\.json5#${ref}\"" .github/renovate.json5)" = 2
+          # default.json5, plus the language preset (a docs-only repo has none).
+          want=2
+          if grep -qx 'language: none' .copier-answers.yml; then want=1; fi
+          test "$(grep -c "github>iT3E/github-workflows//renovate/[a-z]*\.json5#${ref}\"" .github/renovate.json5)" = "$want"
 
       # Outside the workspace: copier copies from it with git, and a
       # nested repository there would look like a broken submodule.
@@ -279,7 +283,7 @@ jobs:
           git config --global user.name "template-ci"
           git config --global user.email "template-ci@users.noreply.github.com"
           pipx install "copier==${COPIER_VERSION}"
-          for a in go python node; do
+          for a in go python node none; do
             copier copy --quiet --defaults --data-file "tests/$a.yml" --vcs-ref HEAD "$GITHUB_WORKSPACE" "$RUNNER_TEMP/example-$a"
           done
 

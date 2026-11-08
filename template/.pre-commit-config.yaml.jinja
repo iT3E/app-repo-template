@@ -52,7 +52,7 @@ repos:
         entry: npx --no-install prettier --write --ignore-unknown
         language: system
         types: [text]
-[% else %]
+[% elif language == 'python' %]
   # Formatter. CI runs ruff only where the repo turned it on (build.yaml).
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # renovate: datasource=github-tags depName=astral-sh/ruff-pre-commit

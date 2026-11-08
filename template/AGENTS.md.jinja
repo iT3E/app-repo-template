@@ -7,7 +7,7 @@ tnwks-ops is the reference for anything not covered there.
 
 ## What this is
 
-[% if language == 'go' %]A Go service[% elif language == 'node' %]A Node app[% else %]A Python app[% endif %][% if has_image %]. CI builds the image `[[ image_name or 'ghcr.io/it3e/<this repo>' ]]`,
+[% if language == 'go' %]A Go service[% elif language == 'node' %]A Node app[% elif language == 'python' %]A Python app[% else %]A docs-only repo (Markdown, no code)[% endif %][% if has_image %]. CI builds the image `[[ image_name or 'ghcr.io/it3e/<this repo>' ]]`,
 which is public[% endif %]. Describe it here (what it does, where it is deployed from in
 tnwks-ops); `copier update` keeps local edits to this file.
 
@@ -43,11 +43,16 @@ tnwks-ops); `copier update` keeps local edits to this file.
   tnwks-ops PR moves that pin.
 [% endif %]
 [% endif %]
+[% if language == 'none' %]
+- Checks: `privacy`, `betterleaks`, `changelog`, `actionlint` (workflow
+  changes only), and the labeler. There is no build job.
+[% else %]
 - Checks: `build.yaml` ([% if language == 'go' %]gofmt, go vet, golangci-lint on new issues, `go test
   -race`[% elif language == 'node' %]npm ci, [% if node_lint %]lint, [% endif %][% if node_format_check %]prettier --check, [% endif %]`npm test`, `npm run build`[% if extra_test_command %], the extra tests[% endif %][% else %]compileall[% if extra_test_command %], the tests[% endif %][% endif %][% if has_image %], the Docker build[% if image_test_command %] and its tests[% endif %][% endif %]), `privacy`, `betterleaks`, `changelog`,
   `actionlint` (workflow changes only), and the labeler. Locally: `task test`[% if language == 'go' or (language == 'node' and node_lint) %],
   `task lint`[% endif %][% if language == 'node' %] (run `npm ci` first; the hooks use the
   repo's own prettier)[% endif %].
+[% endif %]
 - The workflows are thin callers of the reusable workflows in
   iT3E/github-workflows, pinned by the template, and the files listed in
   app-repo-template's README are managed by Copier. Change them there; a
