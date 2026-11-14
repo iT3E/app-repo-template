@@ -51,7 +51,7 @@ _message_after_copy: |
 github_workflows:
   type: str
   # renovate: datasource=github-tags depName=iT3E/github-workflows
-  default: "v1.9.2@447a36cf89cd163004fcf7b574955c6c6deb2f92"
+  default: "v1.9.3@49f998b9ac2a57f441c9380cce88bfcd9abf7ffa"
   when: false
 
 github_workflows_ref:
