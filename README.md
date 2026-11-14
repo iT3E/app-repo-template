@@ -333,13 +333,13 @@ committed anywhere else or printed.
 
   ```bash
   sops -d --extract '["terms"]' .github/privacy-terms.sops.yaml \
-    | ../<repo>/bin/privacy-check --encode \
     | gh secret set PRIVACY_TERMS --repo iT3E/<repo>
   ```
 
-  The secret holds one opaque line that `bin/privacy-check --encode`
-  makes from the list; `bin/privacy-check` also still reads the plain
-  list. A value that reads as neither stops the check (exit 2).
+  That writes the plain list. `bin/privacy-check` also reads one opaque
+  line made from it (`bin/privacy-check --encode`), which only tnwks-ops'
+  `task privacy:sync` writes, once a repository can read it. A value that
+  reads as neither stops the check (exit 2).
 
   Re-sync every app repo (and this repo and github-workflows) after the
   list changes. In a private app repo a missing secret fails the check.
