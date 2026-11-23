@@ -3,6 +3,12 @@
 Notable changes to this repository, newest first. Each PR adds a Changie
 fragment under `.changes/unreleased/`; merging to `main` releases them.
 
+## v0.11.1 - 2026-11-23
+
+### Fixed
+
+* Dependency updates: fix(github-release): update astral-sh/ruff-pre-commit to v0.17.6 (#30)
+
 ## v0.11.0 - 2026-11-22
 
 ### Changed
