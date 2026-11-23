@@ -7,7 +7,7 @@ version: "3"
 [% if has_image and image_test_command and image_test_postgres %]
 vars:
   # renovate: datasource=docker depName=postgres
-  POSTGRES_VERSION: "18"
+  POSTGRES_VERSION: "19"
 
 [% endif %]
 tasks:
